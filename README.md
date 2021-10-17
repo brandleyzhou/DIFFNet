@@ -5,7 +5,16 @@ This repo is for **[Self-Supervised Monocular DepthEstimation with Internal Feat
 
  A new bockbone for self-supervised depth estimaiton.
 
-### ** Paper and trained models are coming soon **
+```
+@article{diffnet_bmvc,
+    title = {Digging into Self-Supervised Monocular Depth Prediction},
+    author  = {
+    booktitle = {The British Machine Conference (BMVC)},
+    month = {November},
+    year = {2021}}
+```
+
+### ** Paper, implementation details and trained models are coming soon **
 
 ## Comparing with others
 ![](images/table1.png)
