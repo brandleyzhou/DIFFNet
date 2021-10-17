@@ -522,76 +522,30 @@ class CS_Block(nn.Module):
         
         return out_feature
         
-#class fSEModule(nn.Module):
-#    def __init__(self, high_feature_channel, low_feature_channels, output_channel = None):
-#        super(fSEModule, self).__init__()
-#        in_channel = high_feature_channel + low_feature_channels
-#        out_channel = high_feature_channel
-#        if output_channel is not None:
-#            out_channel = output_channel
-#        reduction = 16
-#        channel = in_channel
-#        #self.ca = ChannelAttention(channel)
-#        #self.sa = SpatialAttention()
-#        self.cs = CS_Block(channel)
-#        #self.conv_se = nn.Conv2d(in_channels = in_channel, out_channels = out_channel, kernel_size = 1, stride = 1)
-#        self.conv_se = nn.Conv2d(in_channels = in_channel, out_channels = out_channel, kernel_size = 3, stride = 1, padding = 1 )
-#        self.relu = nn.ReLU(inplace = True)
-#
-#    def forward(self, high_features, low_features):
-#
-#        features = [upsample(high_features)]
-#        features += low_features
-#        features = torch.cat(features, 1)
-#
-#        #features = self.ca(features)
-#        #features = self.sa(features)
-#        features = self.cs(features)
-#        
-#        #return self.relu(self.ca(self.conv_se(features)))
-#        return self.relu(self.conv_se(features))
-#        #return self.conv_se(features)
-
-class fSEModule(nn.Module):
+class Attention_Module(nn.Module):
     def __init__(self, high_feature_channel, low_feature_channels, output_channel = None):
-        super(fSEModule, self).__init__()
+        super(Attention_Module, self).__init__()
         in_channel = high_feature_channel + low_feature_channels
         out_channel = high_feature_channel
         if output_channel is not None:
             out_channel = output_channel
         reduction = 16
         channel = in_channel
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
-
-        self.fc = nn.Sequential(
-            nn.Linear(channel, channel // reduction, bias = False),
-            nn.ReLU(inplace = True),
-            nn.Linear(channel // reduction, channel, bias = False)
-        )
-
-        self.sigmoid = nn.Sigmoid()
-        #self.conv_se = nn.Conv2d(in_channels = in_channel, out_channels = out_channel, kernel_size = 1, stride = 1)
+        #self.ca = ChannelAttention(channel)
+        #self.sa = SpatialAttention()
+        #self.cs = CS_Block(channel)
         self.conv_se = nn.Conv2d(in_channels = in_channel, out_channels = out_channel, kernel_size = 3, stride = 1, padding = 1 )
-        #self.conv_se = nn.Conv2d(in_channels = in_channel, out_channels = out_channel, kernel_size = 5, stride = 1, padding = 2 )
         self.relu = nn.ReLU(inplace = True)
 
     def forward(self, high_features, low_features):
+
         features = [upsample(high_features)]
         features += low_features
-        #if len(low_features) == 4:
-            #print("a low_cated features in decoder")
-            #low_feature_cated = torch.cat(low_features,1)
-            #visual_feature(low_feature_cated,"low_features_fused")
         features = torch.cat(features, 1)
-        b, c, _, _ = features.size()
-        y = self.avg_pool(features).view(b, c)
-        y = self.fc(y).view(b, c, 1, 1)
 
-        y = self.sigmoid(y)
-        features = features * y.expand_as(features)
-        if len(low_features) == 4:
-            #print(" features before dispconv in decoder")
-            out_feature = self.relu(self.conv_se(features))
-            #visual_feature(out_feature,"out_feature")
-        #visual_feature(features,"after_attention")
+        #features = self.ca(features)
+        #features = self.sa(features)
+        #features = self.cs(features)
+        
         return self.relu(self.conv_se(features))
+

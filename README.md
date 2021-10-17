@@ -2,13 +2,11 @@
  This repo is for [Self-Supervised Monocular DepthEstimation with Internal Feature Fusion](null) The British Machine Vision Conference (BMVC2021)
  A new bockbone for self-supervised depth estimaiton
 
-#### Network Overview
-![](images/overview3x3.png)
+## *Paper and trained models are coming soon*
 
-#### Comparing with others
+## Comparing with others
 ![](images/table1.png)
 
-## *Paper and trained models are coming soon*
 
 ####Acknowledgement
  Thanks the authors for their released works:
