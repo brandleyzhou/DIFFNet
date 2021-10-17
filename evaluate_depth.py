@@ -126,39 +126,18 @@ def evaluate(opt):
         dataloader = DataLoader(dataset, 16, shuffle=False, num_workers=opt.num_workers,
                                 pin_memory=True, drop_last=False)
         
-        ##change encoder and decoder:
-        
-        #encoder = networks.ResnetEncoder(opt.num_layers, False)
-        #encoder = networks.hr_encoder.hrnet32(False)
-        
-        ## hrnet18
-        #encoder = networks.hr_encoder.hrnet18(False)
         encoder = networks.test_hr_encoder.hrnet18(False)
         encoder.num_ch_enc = [ 64, 18, 36, 72, 144 ]
-        ## hrnet64
-        #encoder = networks.hr_encoder.hrnet64(False)
-        #encoder = networks.test_hr_encoder.hrnet64(False)
-        #encoder.num_ch_enc = [ 64, 64, 128, 256, 512]
-        #encoder = networks.ResnetEncoder(opt.num_layers, False)
-        #encoder = hr_networks.ResnetEncoder(opt.num_layers, opt.weights_init == "pretrained")
-        
-###################################################################################
-        #depth_decoder = hr_networks.HRDepthDecoder(encoder.num_ch_enc, opt.scales)
         depth_decoder = networks.HRDepthDecoder(encoder.num_ch_enc, opt.scales)
-        #depth_decoder = networks.DepthDecoder(encoder.num_ch_enc)
-        #depth_decoder = networks.Lite_DepthDecoder(encoder.num_ch_enc)
         model_dict = encoder.state_dict()
         dec_model_dict = depth_decoder.state_dict()
         encoder.load_state_dict({k: v for k, v in encoder_dict.items() if k in model_dict})
         depth_decoder.load_state_dict({k: v for k, v in decoder_dict.items() if k in dec_model_dict})
-        #encoder.load_state_dict({k: v for k, v in encoder_dict.items() if k not in ["height", "width", "use_stereo"]})
-        #depth_decoder.load_state_dict(torch.load(decoder_path)) if torch.cuda.is_available() else depth_decoder.load_state_dict(torch.load(decoder_path,map_location = 'cpu'))
         
         encoder.cuda() if torch.cuda.is_available() else encoder.cpu()
         encoder.eval()
         depth_decoder.cuda() if torch.cuda.is_available() else depth_decoder.cpu()
         depth_decoder.eval()
-        #pred_disps_viz = []
         pred_disps = []
         print('-->Using\n cuda') if torch.cuda.is_available() else print('-->Using\n CPU')
         print("-> Computing predictions with size {}x{}".format(
@@ -190,13 +169,11 @@ def evaluate(opt):
                     pred_disp = batch_post_process_disparity(pred_disp[:N], pred_disp[N:, :, ::-1])
 
                 pred_disps.append(pred_disp)
-                #pred_disps_viz.append(pred_disp_viz)
             end_time = time.time()
             inferring = end_time - init_time
             print("===>total time:{}".format(sec_to_hm_str(inferring)))
 
         pred_disps = np.concatenate(pred_disps)
-        #pred_disp_viz = torch.cat(pred_disps_viz)
     else:
         # Load predictions from file
         print("-> Loading predictions from {}".format(opt.ext_disp_to_eval))
@@ -252,19 +229,12 @@ def evaluate(opt):
     errors = []
     ratios = []
     
-    #tobe_cleaned = [673, 559, 395, 374, 330, 263, 252, 183, 174, 173, 164, 106]
-    #hard = list(set([395, 559, 374, 394, 385, 173, 164, 58, 73, 377,395, 559, 548, 374, 385, 477, 388, 394, 73, 518, 395, 73, 374, 549, 394, 106, 388, 330, 260, 68]))
-    #hard = list(set([395, 374, 330, 388, 106, 174, 173, 183, 66, 477, 395, 559, 548, 374, 385, 477, 388, 394, 73, 518, 395, 559, 374, 394, 385, 173, 164, 58, 73, 377,395, 394, 374, 173, 559, 152, 330, 174, 64, 183]))
-    #hard = list(set([395, 386, 683, 559, 374, 394, 518, 504, 388, 183,395, 559, 374, 394, 385, 173, 164, 58, 73, 377,395, 559, 548, 374, 385, 477, 388, 394, 73, 518, 395, 73, 374, 549, 394, 106, 388, 330, 260, 68]))
-    #hard = [395, 386, 683, 559, 374, 394, 518, 504, 388, 183,395, 559, 374, 394, 385, 173, 164, 58, 73, 377,395, 559, 548, 374, 385, 477, 388, 394, 73, 518, 395, 73, 374, 549, 394, 106, 388, 330, 260, 68]
     tobe_cleaned = []
     cleaned = list(range(pred_disps.shape[0]))
     for i in tobe_cleaned:
         if i in cleaned:
             cleaned.remove(i)
     for i in range(pred_disps.shape[0]):
-    #for i in cleaned:
-    #for i in hard:
 
         gt_depth = gt_depths[i]
         gt_height, gt_width = gt_depth.shape[:2]
@@ -272,9 +242,6 @@ def evaluate(opt):
         pred_disp = pred_disps[i]
         pred_disp = cv2.resize(pred_disp, (gt_width, gt_height))
         pred_depth = 1 / pred_disp
-        #pred_depth_viz = 1 / pred_disp_viz[i]
-        #print(pred_depth_viz.size())
-        #save_error_visualization(gt_depth,pred_depth,i)
         if opt.eval_split == "eigen":
             mask = np.logical_and(gt_depth > MIN_DEPTH, gt_depth < MAX_DEPTH)
 
@@ -287,12 +254,6 @@ def evaluate(opt):
         else:
             mask = gt_depth > 0
         
-        #pred_depth_viz *= opt.pred_depth_scale_factor
-        #print(pred_depth_viz.size())
-        #save_depth(pred_depth_viz,i)
-
-        # for visualize error map
-        #visual_error(gt_depth,pred_depth,mask,i)
         
         pred_depth = pred_depth[mask]
         gt_depth = gt_depth[mask]
