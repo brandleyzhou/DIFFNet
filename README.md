@@ -1,12 +1,16 @@
 # DIFFNet
- This repo is for [Self-Supervised Monocular DepthEstimation with Internal Feature Fusion](null) The British Machine Vision Conference (BMVC2021)
+ This repo is for [Self-Supervised Monocular DepthEstimation with Internal Feature Fusion](null) accepted by The British Machine Vision Conference (BMVC2021)
  
- A new bockbone for self-supervised depth estimaiton
+ A new bockbone for self-supervised depth estimaiton.
 
-### *Paper and trained models are coming soon*
+### **Paper and trained models are coming soon**
 
 ## Comparing with others
 ![](images/table1.png)
+
+## Evaluation on selected hard cases:
+![](images/table2.png)
+
 
 
 #### Acknowledgement
