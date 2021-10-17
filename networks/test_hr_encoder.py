@@ -453,8 +453,6 @@ class HighResolutionNet(nn.Module):
         list18.append(x)
         x = self.layer1(x)
         
-        # after this layer 18x48x160 transfered to 256x48x160
-        #list18.append(x)
         x_list = []
         for i in range(self.stage2_cfg['NUM_BRANCHES']):
             if self.transition1[i] is not None:
@@ -490,7 +488,6 @@ class HighResolutionNet(nn.Module):
             else:
                 x_list.append(y_list[i])
         x = self.stage4(x_list)
-        # upsample and downsample involved in stages
         list18.append(x[0])
         list36.append(x[1])
         list72.append(x[2])
