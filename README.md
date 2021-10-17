@@ -5,10 +5,12 @@ This repo is for **[Self-Supervised Monocular DepthEstimation with Internal Feat
 
  A new bockbone for self-supervised depth estimaiton.
 
+If you think it is not a bad work, please consider citing it.
+
 ```
 @article{diffnet_bmvc,
-    title = {Digging into Self-Supervised Monocular Depth Prediction},
-    author  = {
+    title = {Self-Supervised Monocular DepthEstimation with Internal Feature Fusion},
+    author  = { Hang Zhou, David Greenwood and Sarah Taylor},
     booktitle = {The British Machine Conference (BMVC)},
     month = {November},
     year = {2021}}
