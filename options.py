@@ -1,9 +1,3 @@
-# Copyright Niantic 2019. Patent Pending. All rights reserved.
-#
-# This software is licensed under the terms of the Monodepth2 licence
-# which allows for non-commercial use only, the full terms of which are made
-# available in the LICENSE file.
-
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -22,30 +16,12 @@ class MonodepthOptions:
                                  help="path to the training data",
                                  #default=os.path.join(file_dir, "train_val"))
                                  default=os.path.join(file_dir, "vkitti"))
-        self.parser.add_argument("--teacher_folder",
-                                 type=str,
-                                 help="log directory",
-                                 default=os.path.join(os.path.expanduser("~"), "tmp_hpc"))
         self.parser.add_argument("--log_dir",
                                  type=str,
                                  help="log directory",
                                  default=os.path.join(os.path.expanduser("~"), "tmp_hpc"))
 
         # TRAINING options
-        self.parser.add_argument("--flipping_loss",
-                                action = "store_true"
-                                )
-        self.parser.add_argument("--hr_pose",
-                                action = "store_true"
-                                )
-        self.parser.add_argument("--uncertain_mask",
-                                action = "store_true"
-                                )
-        self.parser.add_argument("--flipping_loss_weight",
-                                type = float,
-                                help = "the weights for flipping loss",
-                                default = 0.0001
-                                )
         self.parser.add_argument("--model_name",
                                  type=str,
                                  help="the name of the folder to save the model in",
