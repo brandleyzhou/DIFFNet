@@ -24,7 +24,11 @@ If you think it is not a bad work, please consider citing it.
 ## Evaluation on selected hard cases:
 ![](images/table2.png)
 
+## Trained weights
 
+- [diffnet_640x192](https://drive.google.com/file/d/1ZQPZWsIy_KyjV-Et6FSCOPM4iATjDPn-/view?usp=sharing)
+- [diffnet_640x192_ms](https://drive.google.com/file/d/1N_BxD_ofFoewjGVQcNUc1Qkt8yR9_cHR/view?usp=sharing)
+- [diffnet_1024x320](https://drive.google.com/file/d/1SuyBMS3ZLYuZwgyGSpmNrag7ESjRUC52/view?usp=sharing)
 
 #### Acknowledgement
  Thanks the authors for their works:
