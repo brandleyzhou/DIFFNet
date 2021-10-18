@@ -16,7 +16,7 @@ If you think it is not a bad work, please consider citing it.
     year = {2021}}
 ```
 
-### ** Paper, implementation details and trained models are coming soon **
+### ** Paper, implementation details and ~trained models~ are coming soon **
 
 ## Comparing with others
 ![](images/table1.png)
@@ -27,7 +27,7 @@ If you think it is not a bad work, please consider citing it.
 ## Trained weights
 
 - [diffnet_640x192](https://drive.google.com/file/d/1ZQPZWsIy_KyjV-Et6FSCOPM4iATjDPn-/view?usp=sharing)
-- [diffnet_640x192_ms](https://drive.google.com/file/d/1N_BxD_ofFoewjGVQcNUc1Qkt8yR9_cHR/view?usp=sharing)
+- [diffnet_640x192_ms](https://drive.google.com/file/d/1_vh1F_cabTlEjBGXkHZOpAB1CMLmosxg/view?usp=sharing)
 - [diffnet_1024x320](https://drive.google.com/file/d/1SuyBMS3ZLYuZwgyGSpmNrag7ESjRUC52/view?usp=sharing)
 
 #### Acknowledgement
