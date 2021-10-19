@@ -1,7 +1,7 @@
 # DIFFNet
 
 
-This repo is for **[Self-Supervised Monocular DepthEstimation with Internal Feature Fusion](null), BMVC2021**
+This repo is for **[Self-Supervised Monocular DepthEstimation with Internal Feature Fusion](https://arxiv.org/pdf/2110.09482.pdf), BMVC2021**
 
  A new bockbone for self-supervised depth estimaiton.
 
@@ -16,7 +16,7 @@ If you think it is not a bad work, please consider citing it.
     year = {2021}}
 ```
 
-### ** Paper, implementation details and ~trained models~ are coming soon **
+### ** ~Paper~, implementation details and ~trained models~ are coming soon **
 
 ## Comparing with others
 ![](images/table1.png)
