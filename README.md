@@ -1,11 +1,12 @@
 # DIFFNet
 
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/self-supervised-monocular-depthestimation/monocular-depth-estimation-on-kitti-eigen-1)](https://paperswithcode.com/sota/monocular-depth-estimation-on-kitti-eigen-1?p=self-supervised-monocular-depthestimation)
-* Unlike other lead competitors, no test-refinement techniques or other supervisory signals are involved with this method's rank *
-
 This repo is for **[Self-Supervised Monocular Depth Estimation with Internal Feature Fusion(arXiv)](https://arxiv.org/pdf/2110.09482.pdf), BMVC2021**
 
  A new backbone for self-supervised depth estimaiton.
+
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/self-supervised-monocular-depthestimation/monocular-depth-estimation-on-kitti-eigen-1)](https://paperswithcode.com/sota/monocular-depth-estimation-on-kitti-eigen-1?p=self-supervised-monocular-depthestimation)
+* Unlike other lead competitors, no test-refinement techniques or other supervisory signals are involved with this method's rank.
+
 
 If you think it is not a bad work, please consider citing it.
 
