@@ -34,6 +34,7 @@ If you think it is not a bad work, please consider citing it.
 - [diffnet_640x192](https://drive.google.com/file/d/1ZQPZWsIy_KyjV-Et6FSCOPM4iATjDPn-/view?usp=sharing)
 - [diffnet_640x192_ms](https://drive.google.com/file/d/1_vh1F_cabTlEjBGXkHZOpAB1CMLmosxg/view?usp=sharing)
 - [diffnet_1024x320](https://drive.google.com/file/d/1SuyBMS3ZLYuZwgyGSpmNrag7ESjRUC52/view?usp=sharing)
+- [diffnet_1024x320_ttr](https://drive.google.com/file/d/1R0b0GYUxyZeaVCHQEELHevHoegwFi3qU/view?usp=sharing)
 
 #### Acknowledgement
  Thanks the authors for their works:
