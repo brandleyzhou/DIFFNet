@@ -7,7 +7,7 @@ This repo is for **[Self-Supervised Monocular Depth Estimation with Internal Fea
 
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/self-supervised-monocular-depthestimation/monocular-depth-estimation-on-kitti-eigen-1)](https://paperswithcode.com/sota/monocular-depth-estimation-on-kitti-eigen-1?p=self-supervised-monocular-depthestimation)
-* Unlike other lead competitors, only test-time refinement techniques is applied on 1024x320 monocular model, no supervisory signals are involved with this rank.
+* Unlike other lead competitors, only test-time refinement (TTR) is applied on 1024x320 monocular model, no supervisory signals are involved with this rank.
 
 
 If you think it is not a bad work, please consider citing it.
