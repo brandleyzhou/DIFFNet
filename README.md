@@ -12,7 +12,7 @@ If you think it is not a bad work, please consider citing it.
 
 ```
 @article{diffnet_bmvc,
-    title = {Self-Supervised Monocular DepthEstimation with Internal Feature Fusion},
+    title = {Self-Supervised Monocular Depth Estimation with Internal Feature Fusion},
     author  = { Hang Zhou, David Greenwood and Sarah Taylor},
     booktitle = {The British Machine Vision Conference (BMVC)},
     month = {November},
