@@ -65,35 +65,8 @@ def test_simple(args):
 
     # LOADING PRETRAINED MODEL
     print("   Loading pretrained encoder")
-    #encoder = networks.ResnetEncoder(18, False,plan = args.model_folder[35:40])
-    
-    ##change encoder and decoder:
-    
-    #encoder = networks.ResnetEncoder(opt.num_layers, False)
-    #encoder = networks.hr_encoder.hrnet32(False)
-    
-    ## hrnet18
-    #encoder = networks.hr_encoder.hrnet18(False)
     encoder = networks.test_hr_encoder.hrnet18(False)
     encoder.num_ch_enc = [ 64, 18, 36, 72, 144 ]
-    
-    ## hrnet32
-    #encoder = networks.hr_encoder.hrnet32(False)
-    #encoder = networks.test_hr_encoder.hrnet32(False)
-    #encoder.num_ch_enc = [ 64, 32, 64, 128, 256 ]
-    
-    ## hrnet48
-    #encoder = networks.hr_encoder.hrnet48(False)
-    #encoder = networks.test_hr_encoder.hrnet48(False)
-    #encoder.num_ch_enc = [ 64, 48, 96, 192, 384 ]
-    
-    
-    ## hrnet64
-    #encoder = networks.hr_encoder.hrnet64(False)
-    #encoder = networks.test_hr_encoder.hrnet64(False)
-    #encoder.num_ch_enc = [ 64, 64, 128, 256, 512]
-    #encoder = networks.ResnetEncoder(opt.num_layers, False)
-    #encoder = hr_networks.ResnetEncoder(opt.num_layers, opt.weights_init == "pretrained")
     loaded_dict_enc = torch.load(encoder_path, map_location=device)
 
     # extract the height and width of image that this model was trained with
@@ -106,9 +79,6 @@ def test_simple(args):
     para_sum_encoder = sum(p.numel() for p in encoder.parameters())
     
     print("   Loading pretrained decoder")
-    #depth_decoder = networks.DepthDecoder(
-    #        encoder.num_ch_enc, scales=range(4))
-    #depth_decoder = hr_networks.HRDepthDecoder(encoder.num_ch_enc, range(4))
     depth_decoder = networks.HRDepthDecoder(encoder.num_ch_enc, range(4))
 
     loaded_dict = torch.load(depth_decoder_path, map_location=device)
