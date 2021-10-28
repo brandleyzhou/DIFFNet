@@ -13,7 +13,6 @@ from options import MonodepthOptions
 import datasets
 import networks
 import hr_networks
-from viz_map import save_depth, save_visualization,save_error_visualization 
 print(torch.__version__)
 cv2.setNumThreads(0)  # This speeds up evaluation 5x on our unix systems (OpenCV 3.3.1)
 
@@ -43,29 +42,6 @@ def rank_error(errors, idx = 0, top = 5):
 # to convert our stereo predictions to real-world scale we multiply our depths by 5.4.
 STEREO_SCALE_FACTOR = 5.4
 
-def visual_error(gt, pred, mask, i):
-    """Computation of error metrics between predicted and ground truth depths
-    """
-    pred_depth_0 = pred
-    gt_0 = gt
-    pred_depth = pred
-    gt_depth = gt
-    pred_depth = pred_depth[mask]
-    gt_depth = gt_depth[mask]
-    ratio = np.median(gt_depth) / np.median(pred_depth)
-    pred_depth_0 *= ratio
-     
-    MIN_DEPTH = 1e-3
-    MAX_DEPTH = 80
-    pred_depth_0[pred_depth_0 < MIN_DEPTH] = MIN_DEPTH
-    pred_depth_0[pred_depth_0 > MAX_DEPTH] = MAX_DEPTH
-    gt_0[mask==False] = 1
-    abs_rel = np.abs(gt_0 - pred_depth_0) / gt_0
-    mask_0 = np.ones(mask.shape)
-    mask_0[mask==False] = 0
-    mask_0[mask==True]=1
-    abs_rel = mask_0 * abs_rel
-    save_visualization(abs_rel , i)
 def compute_errors(gt, pred):
     """Computation of error metrics between predicted and ground truth depths
     """
