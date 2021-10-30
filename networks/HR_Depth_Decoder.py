@@ -49,9 +49,6 @@ class HRDepthDecoder(nn.Module):
         feature36 = input_features[2]
         feature18 = input_features[1]
         feature64 = input_features[0]
-        
-        # add fSE block to decoder
-        
         x72 = self.convs["72"](feature144, feature72)
         x36 = self.convs["36"](x72 , feature36)
         x18 = self.convs["18"](x36 , feature18)
