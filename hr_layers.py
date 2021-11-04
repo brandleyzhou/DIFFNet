@@ -402,16 +402,12 @@ class ChannelAttention(nn.Module):
     def __init__(self, in_planes, ratio=16):
         super(ChannelAttention, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.max_pool = nn.AdaptiveMaxPool2d(1)
            
         self.fc = nn.Sequential(
             nn.Linear(in_planes,in_planes // ratio, bias = False),
             nn.ReLU(inplace = True),
             nn.Linear(in_planes // ratio, in_planes, bias = False)
         )
-        #self.fc = nn.Sequential(nn.Conv2d(in_planes, in_planes // 16, 1, bias=False),
-        #                       nn.ReLU(),
-        #                       nn.Conv2d(in_planes // 16, in_planes, 1, bias=False))
         self.sigmoid = nn.Sigmoid()
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -421,14 +417,7 @@ class ChannelAttention(nn.Module):
         x = in_feature
         b, c, _, _ = in_feature.size()
         avg_out = self.fc(self.avg_pool(x).view(b,c)).view(b, c, 1, 1)
-        #max_out = self.fc(self.max_pool(x).view(b,c)).view(b, c, 1, 1)
-        
-        #avg_out = self.fc(self.avg_pool(x))
-        #max_out = self.fc(self.max_pool(x))
-        
-        #out = max_out
         out = avg_out
-        #out = avg_out + max_out
         return self.sigmoid(out).expand_as(in_feature) * in_feature
 
 ## SpatialAttetion
@@ -531,7 +520,7 @@ class Attention_Module(nn.Module):
             out_channel = output_channel
         reduction = 16
         channel = in_channel
-        #self.ca = ChannelAttention(channel)
+        self.ca = ChannelAttention(channel)
         #self.sa = SpatialAttention()
         #self.cs = CS_Block(channel)
         self.conv_se = nn.Conv2d(in_channels = in_channel, out_channels = out_channel, kernel_size = 3, stride = 1, padding = 1 )
@@ -543,7 +532,7 @@ class Attention_Module(nn.Module):
         features += low_features
         features = torch.cat(features, 1)
 
-        #features = self.ca(features)
+        features = self.ca(features)
         #features = self.sa(features)
         #features = self.cs(features)
         
