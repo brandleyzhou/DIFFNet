@@ -336,16 +336,6 @@ class SE_block(nn.Module):
         self.sigmoid = nn.Sigmoid()
         self.relu = nn.ReLU(inplace = True)
         self.vis = False
-        #if self.vis == True:
-        #    self.weight_list = []
-        #    #self.weight_diff_1 = []
-        #    #self.weight_diff_2 = []
-        #    self.weight_rel_diff_1 = []
-        #    self.weight_rel_diff_2 = []
-        #    self.name = 0
-        #    self.n = 0
-        #    self.d = 0 # do not know why has two series, so just focus on one track
-        #    self.diff_origin_vs_reweights_list = []
     
     def forward(self, in_feature):
 
@@ -355,46 +345,7 @@ class SE_block(nn.Module):
         output_weights_avg = self.fc(output_weights_avg).view(b,c,1,1)
         output_weights_max = self.fc(output_weights_max).view(b,c,1,1)
         output_weights = output_weights_avg + output_weights_max
-        #output_weights = output_weights_max
         output_weights = self.sigmoid(output_weights)
-        #if self.vis == True:
-        #    self.n += 1
-        #    self.d += 1
-        #    if self.n % 500 == 0:
-
-        #        self.diff_origin_vs_reweights_list.append(torch.mean(output_weights.expand_as(in_feature)* in_feature - in_feature).detach().cpu().numpy())
-        #        
-        #        self.weight_list.append(output_weights[0,0,0,0])
-        #        
-        #        #self.weight_diff_1.append(output_weights_avg[0,0]-output_weights[0,0,0,0])
-        #        #self.weight_diff_2.append(output_weights_avg[0,1]-output_weights[0,1,0,0])
-        #        #self.weight_rel_diff_1.append((output_weights_avg[0,0]-output_weights[0,0,0,0])/ output_weights_avg[0,0])
-        #        #self.weight_rel_diff_2.append((output_weights_avg[0,1]-output_weights[0,1,0,0])/ output_weights_avg[0,1])
-        #        
-        #        if self.d % 3 != 0:
-        #            
-        #            # plot reweights 
-        #            fig1, ax1 = plt.subplots(figsize=(11,8))
-        #            ax1.plot(range(len(self.weight_list)),self.weight_rel_diff_1,label = 'rel_weight1')
-        #            ax1.plot(range(len(self.weight_list)),self.weight_rel_diff_2,label = 'rel_weight2')
-        #            ax1.set_title("difference vs epochs")
-        #            ax1.set_xlabel("epochs")
-        #            ax1.set_ylabel("rel_difference")
-        #            ax1.legend()
-        #            plt.savefig("rel_difference_vs_epoch.png")
-        #            
-        #            # plot before fc layer.
-        #            fig2, ax2 = plt.subplots(figsize=(11,8))
-        #            #ax2.plot(range(len(self.weight_list)),self.weight_diff_1,label = 'weight1')
-        #            #ax2.plot(range(len(self.weight_list)),self.weight_diff_2,label = 'weight2')
-        #            ax2.plot(range(len(self.weight_list)),self.diff_origin_vs_reweights_list,label='difference_{}'.format(self.name))
-
-        #            ax2.set_title("difference between rewights and weights vs epochs")
-        #            ax2.set_xlabel("epochs")
-        #            ax2.set_ylabel("abso_difference")
-        #            #ax2.legend()
-        #            plt.savefig("{}_feature_mean_difference_vs_epoch.png".format(self.name))
-        #            plt.close("all")
         return output_weights.expand_as(in_feature) * in_feature
 
 ## ChannelAttetion
@@ -467,25 +418,6 @@ class CS_Block(nn.Module):
 
         b,c,_,_ = in_feature.size()
         
-        ## Spatial_Block
-        #in_feature_avg = torch.mean(in_feature,1,True)
-        #in_feature_max,_ = torch.max(in_feature,1,True)
-        #mixed_feature = torch.cat([in_feature_avg,in_feature_max],1)
-        #spatial_attention = self.sigmoid(self.conv(mixed_feature))
-        ##spatial_attention = self.sigmoid(self.conv(in_feature_max))
-        #out_feature_1 = spatial_attention.expand_as(in_feature) * in_feature
-        ##########################
-        #
-        #output_weights_avg = self.avg_pool(out_feature_1).view(b,c)
-        #output_weights_max = self.max_pool(out_feature_1).view(b,c)
-        #output_weights_avg = self.fc(output_weights_avg).view(b,c,1,1)
-        #output_weights_max = self.fc(output_weights_max).view(b,c,1,1)
-        ##output_weights = output_weights_avg + output_weights_max
-        #output_weights = output_weights_max
-        #output_weights = self.sigmoid(output_weights)
-        #out_feature = output_weights.expand_as(out_feature_1) * out_feature_1  
-        
-        #########################
         
         output_weights_avg = self.avg_pool(in_feature).view(b,c)
         output_weights_max = self.max_pool(in_feature).view(b,c)
@@ -494,8 +426,6 @@ class CS_Block(nn.Module):
         output_weights_max = self.fc(output_weights_max).view(b,c,1,1)
         
         output_weights = output_weights_avg + output_weights_max
-        #output_weights = output_weights_max
-        #output_weights = output_weights_avg
         
         output_weights = self.sigmoid(output_weights)
         out_feature_1 = output_weights.expand_as(in_feature) * in_feature
@@ -505,7 +435,6 @@ class CS_Block(nn.Module):
         in_feature_max,_ = torch.max(out_feature_1,1,True)
         mixed_feature = torch.cat([in_feature_avg,in_feature_max],1)
         spatial_attention = self.sigmoid(self.conv(mixed_feature))
-        #spatial_attention = self.sigmoid(self.conv(in_feature_max))
         out_feature = spatial_attention.expand_as(out_feature_1) * out_feature_1
         #########################
         
@@ -518,7 +447,6 @@ class Attention_Module(nn.Module):
         out_channel = high_feature_channel
         if output_channel is not None:
             out_channel = output_channel
-        reduction = 16
         channel = in_channel
         self.ca = ChannelAttention(channel)
         #self.sa = SpatialAttention()

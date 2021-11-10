@@ -8,27 +8,15 @@ import torch.nn.functional as F
 from torchvision.transforms.functional import hflip
 import torch.optim as optim
 from torch.utils.data import DataLoader
-#from torch.nn import DataParallel as DDP
-#from torch.nn.parallel import DistributedDataParallel as DDP
 import json
 import torchvision
-print(torchvision.__version__)
-print(torch.__version__)
 from utils import *
 from kitti_utils import *
 from layers import *
-
-#try:
-#    from torch.utils.tensorboard import SummaryWriter
-#except:
-#    from tensorboardX import SummaryWriter
 import datasets
 import networks
-import hr_networks
 from IPython import embed
 
-print("Threads: " + str(torch.get_num_threads()))
-#torch.distributed.init_process_group(backend='nccl',rank=2,world_size=4,init_method='env://')
 class Trainer:
     def __init__(self, options):
         now = datetime.now()
@@ -78,33 +66,16 @@ class Trainer:
 
         if self.use_pose_net:#use_pose_net = True
             if self.opt.pose_model_type == "separate_resnet":#defualt=separate_resnet  choice = ['normal or shared']
-                #seperate means pose_encoder using a different ResnetEncoder
-                #shared means pose_encoder using a same ResnetEncoder as depth_encoder
                 
-                
-                if self.opt.hr_pose == True:
-                    print("Using Hr Pose")
-                    self.models["pose_encoder"] = networks.hr_pose.hrnet18(True)
-                    self.models["pose_encoder"].num_ch_enc = [ 64, 18, 36, 72, 144 ]
-                
-                else:
-                    self.models["pose_encoder"] = networks.ResnetEncoder(
-                        self.opt.num_layers,
-                        self.opt.weights_init == "pretrained",
-                        num_input_images=self.num_pose_frames)#num_input_images=2
+                self.models["pose_encoder"] = networks.ResnetEncoder(
+                    self.opt.num_layers,
+                    self.opt.weights_init == "pretrained",
+                    num_input_images=self.num_pose_frames)#num_input_images=2
                 
                 self.models["pose"] = networks.PoseDecoder(
                     self.models["pose_encoder"].num_ch_enc,
                     num_input_features=1,
                     num_frames_to_predict_for=2)
-
-            elif self.opt.pose_model_type == "shared":
-                self.models["pose"] = networks.PoseDecoder(
-                    self.models["encoder"].num_ch_enc, self.num_pose_frames)
-
-            elif self.opt.pose_model_type == "posecnn":
-                self.models["pose"] = networks.PoseCNN(
-                    self.num_input_frames if self.opt.pose_model_input == "all" else 2)
 
             self.models["pose_encoder"].cuda()
             self.models["pose"].cuda()
@@ -469,12 +440,7 @@ class Trainer:
 
             for frame_id in self.opt.frame_ids[1:]:
                 pred = outputs[("color", frame_id, scale)]
-                if self.opt.uncertain_mask == True:
-                    uncertain_mask = self.generate_uncertain_mask(inputs["color",0,0], outputs[("depth",0,scale)]) 
-                    new_loss = self.compute_reprojection_loss(pred,target) * uncertain_mask  
-                    reprojection_losses.append(new_loss)
-                else:
-                    reprojection_losses.append(self.compute_reprojection_loss(pred, target))
+                reprojection_losses.append(self.compute_reprojection_loss(pred, target))
             reprojection_losses = torch.cat(reprojection_losses, 1)
             if not self.opt.disable_automasking:
                 #doing this 
@@ -544,8 +510,6 @@ class Trainer:
         
         total_loss /= self.num_scales
         losses["loss"] = total_loss 
-        if self.opt.flipping_loss == True:
-            losses['symmetry_loss'] = self.opt.flipping_loss_weight *self.flipped_loss(inputs["color",0,0], outputs[("depth",0,0)])  
         return losses
 
     def compute_depth_losses(self, inputs, outputs, losses):

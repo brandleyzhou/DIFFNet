@@ -12,7 +12,6 @@ from utils import readlines, sec_to_hm_str
 from options import MonodepthOptions
 import datasets
 import networks
-import hr_networks
 print(torch.__version__)
 cv2.setNumThreads(0)  # This speeds up evaluation 5x on our unix systems (OpenCV 3.3.1)
 
