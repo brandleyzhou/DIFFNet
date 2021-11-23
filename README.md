@@ -11,7 +11,15 @@ This repo is for **[Self-Supervised Monocular Depth Estimation with Internal Fea
 
 
 If you think it is not a bad work, please consider citing it.
+```
+@inproceedings{zhou_diffnet,
+    title={Self-Supervised Monocular Depth Estimation with Internal Feature Fusion},
+    author={Zhou, Hang and Greenwood, David and Taylor, Sarah},
+    booktitle={British Machine Vision Conference (BMVC)},
+    year={2021}
+    }
 
+```
 
 ## Comparing with others
 ![](images/table1.png)

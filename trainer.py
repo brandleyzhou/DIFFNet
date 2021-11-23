@@ -130,7 +130,7 @@ class Trainer:
         
         #val_dataset = self.dataset(
         val_dataset = datasets.KITTIRAWDataset( 
-            'data_path/train_val', val_filenames, self.opt.height, self.opt.width,
+            'data_path/kitti', val_filenames, self.opt.height, self.opt.width,
             self.opt.frame_ids, 4, is_train=False, img_ext=img_ext)
         self.val_loader = DataLoader(
             val_dataset, self.opt.batch_size, True,
