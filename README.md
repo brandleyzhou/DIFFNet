@@ -29,8 +29,8 @@ If you think it is not a bad work, please consider citing it.
 
 ## Trained weights
 
--[diffnet_1024x320_ms_ttr](https://drive.google.com/file/d/1u4pizvk9xZ8bbyWLyjd0m_9hnm_mO9-Q/view?usp=sharing)
--[diffnet_1024_320_ms](https://drive.google.com/file/d/1VR0BYXKyclvv1Gq2XcQCR-fvJuFQ80SI/view?usp=sharing)
+- [diffnet_1024x320_ms_ttr](https://drive.google.com/file/d/1u4pizvk9xZ8bbyWLyjd0m_9hnm_mO9-Q/view?usp=sharing)
+- [diffnet_1024_320_ms](https://drive.google.com/file/d/1VR0BYXKyclvv1Gq2XcQCR-fvJuFQ80SI/view?usp=sharing)
 - [diffnet_640x192](https://drive.google.com/file/d/1ZQPZWsIy_KyjV-Et6FSCOPM4iATjDPn-/view?usp=sharing)
 - [diffnet_640x192_ms](https://drive.google.com/file/d/1_vh1F_cabTlEjBGXkHZOpAB1CMLmosxg/view?usp=sharing)
 - [diffnet_1024x320](https://drive.google.com/file/d/1SuyBMS3ZLYuZwgyGSpmNrag7ESjRUC52/view?usp=sharing)
