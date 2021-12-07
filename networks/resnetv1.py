@@ -12,7 +12,6 @@ import torch
 import torch.nn as nn
 import torchvision.models as models # a subpackage containing different models 
 import torch.utils.model_zoo as model_zoo#pretrained network
-from visual_block import visual_block
 from hr_layers import *
 
 class ResNetMultiImageInput(ResNet):

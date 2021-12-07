@@ -135,7 +135,7 @@ class Trainer:
         else:
             val_sampler = None
         self.val_loader = DataLoader(
-            val_dataset, self.opt.batch_size, True,
+            val_dataset, self.opt.batch_size //2, False,
             num_workers=self.opt.num_workers, pin_memory=True, drop_last=True,sampler=val_sampler)
         self.val_iter = iter(self.val_loader)
 
