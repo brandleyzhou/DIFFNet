@@ -1,3 +1,9 @@
+# Copyright Niantic 2019. Patent Pending. All rights reserved.
+#
+# This software is licensed under the terms of the Monodepth2 licence
+# which allows for non-commercial use only, the full terms of which are made
+# available in the LICENSE file.
+
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
@@ -6,6 +12,7 @@ import torch
 import torch.nn as nn
 import torchvision.models as models # a subpackage containing different models 
 import torch.utils.model_zoo as model_zoo#pretrained network
+from visual_block import visual_block
 from hr_layers import *
 
 class ResNetMultiImageInput(ResNet):
@@ -54,11 +61,11 @@ def resnet_multiimage_input(num_layers, pretrained=True, num_input_images=1):
     return model
 
 
-class ResnetEncoder(nn.Module):
+class ResnetEncoderV1(nn.Module):
     """Pytorch module for a resnet encoder
     """
     def __init__(self, num_layers, pretrained=True, num_input_images=1):
-        super(ResnetEncoder, self).__init__()
+        super(ResnetEncoderV1, self).__init__()
 
         self.num_ch_enc = np.array([64, 64, 128, 256, 512])
 
@@ -85,26 +92,12 @@ class ResnetEncoder(nn.Module):
             self.num_ch_enc[1:] *= 4
 
     def forward(self, input_image):
-        features = []
         x = (input_image - 0.45) / 0.225 # normalizetion?
         x = self.encoder.conv1(x)
         x = self.encoder.bn1(x)
-        features.append(self.encoder.relu(x))
-        #features.append(self.encoder.layer1(self.encoder.maxpool(features[-1])))
-        #visual_block(features[-1],"feature1")
-        #features.append(self.encoder.layer2(features[-1]))
-        #visual_block(features[-1],2)
-        #features.append(self.encoder.layer3(features[-1]))
-        #visual_block(features[-1],3)
-        #features.append(self.encoder.layer4(features[-1]))
-        #visual_block(features[-1],4)
-        #features[-1] = self.se_block0(features[-1])
-        features.append(self.encoder.layer1(self.encoder.maxpool(features[-1])))
-        #features[-1] = self.se_block1(features[-1])
-        features.append(self.encoder.layer2(features[-1]))
-        #features[-1] = self.se_block2(features[-1])
-        features.append(self.encoder.layer3(features[-1]))
-        #features[-1] = self.se_block3(features[-1])
-        features.append(self.encoder.layer4(features[-1]))
-        #features[-1] = self.se_block4(features[-1])
-        return features# feature has 5 elements
+        x = self.encoder.relu(x)
+        x = self.encoder.layer1(self.encoder.maxpool(x))
+        x = self.encoder.layer2(x)
+        x = self.encoder.layer3(x)
+        x = self.encoder.layer4(x)
+        return x

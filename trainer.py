@@ -8,6 +8,8 @@ import torch.nn.functional as F
 from torchvision.transforms.functional import hflip
 import torch.optim as optim
 from torch.utils.data import DataLoader
+import torch.distributed as dist
+from torch.utils.data.distributed import DistributedSampler
 import json
 import torchvision
 from utils import *
@@ -17,11 +19,27 @@ import datasets
 import networks
 from IPython import embed
 
+distributed = True
+def reduce_tensor(inp):
+    """
+    Reduce the loss from all processes so that 
+    process with rank 0 has the averaged results.
+    """
+    world_size = torch.distributed.get_world_size()
+    if world_size < 2:
+        return inp
+    with torch.no_grad():
+        reduced_inp = inp
+        dist.reduce(reduced_inp, dst=0)
+    return reduced_inp
+
 class Trainer:
     def __init__(self, options):
-        now = datetime.now()
-        current_time_date = now.strftime("%d%m%Y-%H:%M:%S")
         self.opt = options
+        now = datetime.now()
+        dist.init_process_group(backend="nccl", init_method="env://",)
+        torch.cuda.set_device(self.opt.local_rank)
+        current_time_date = now.strftime("%d%m%Y-%H:%M:%S")
         self.log_path = os.path.join(self.opt.log_dir, self.opt.model_name, current_time_date)
 
         # checking height and width are multiples of 32
@@ -30,19 +48,14 @@ class Trainer:
 
         self.models = {}
         self.parameters_to_train = []
+        self.device = torch.device(f'cuda:{self.opt.local_rank}')
 
-        self.device = torch.device("cpu" if self.opt.no_cuda else "cuda:0")#not using cuda?
         self.num_scales = len(self.opt.scales)#scales = [0,1,2,3]'scales used in the loss'
         self.num_input_frames = len(self.opt.frame_ids)#frames = [0,-1,1]'frame to load'
         self.num_pose_frames = 2 if self.opt.pose_model_input == "pairs" else self.num_input_frames
-        #defualt is pose_model_input = 'pairs'
-
         assert self.opt.frame_ids[0] == 0, "frame_ids must start with 0"
 
         self.use_pose_net = not (self.opt.use_stereo and self.opt.frame_ids == [0])
-        #able if not using use_stereo or frame_ids !=0
-        #use_stereo defualt disable
-        #frame_ids defualt =[0,-1,1]
 
         if self.opt.use_stereo:
             self.opt.frame_ids.append("s")
@@ -58,16 +71,21 @@ class Trainer:
         
         
         self.models["encoder"].to(self.device)
-        self.parameters_to_train += list(self.models["encoder"].parameters())
         self.models["depth"].to(self.device)
+        self.models["encoder"] = nn.parallel.DistributedDataParallel(
+                self.models["encoder"], device_ids= [self.opt.local_rank], output_device=self.opt.local_rank,find_unused_parameters=True)
+        self.models["depth"] = nn.parallel.DistributedDataParallel(
+                self.models["depth"], device_ids= [self.opt.local_rank], output_device=self.opt.local_rank,find_unused_parameters=True)
         self.parameters_to_train += list(self.models["depth"].parameters())
+        self.parameters_to_train += list(self.models["encoder"].parameters())
 
         self.models["posenet"] = networks.PoseNet(
             self.opt.num_layers,
-            self.opt.weights_init == "pretrained",
             num_input_images=self.num_pose_frames)
                 
-        self.models["posenet"].cuda()
+        self.models["posenet"].to(self.device)
+        self.models["posenet"] = nn.parallel.DistributedDataParallel(
+                self.models["posenet"], device_ids= [self.opt.local_rank], output_device=self.opt.local_rank,find_unused_parameters=True)
         self.parameters_to_train += list(self.models["posenet"].parameters())
         
         self.model_optimizer = optim.Adam(self.parameters_to_train, self.opt.learning_rate)#learning_rate=1e-4
@@ -100,17 +118,25 @@ class Trainer:
         train_dataset_k = self.dataset_k(
             self.opt.data_path, train_filenames_k, self.opt.height, self.opt.width,
             self.opt.frame_ids, 4, is_train=True, img_ext='.jpg')
+        if distributed:
+            self.train_sampler = DistributedSampler(train_dataset_k)
+        else:
+            self.train_sampler = None
         self.train_loader_k = DataLoader(
-            train_dataset_k, self.opt.batch_size, True,
-            num_workers=self.opt.num_workers, pin_memory=True, drop_last=True)
+            train_dataset_k, self.opt.batch_size // 2 , shuffle = False,
+            num_workers=self.opt.num_workers, pin_memory=True, drop_last=True, sampler = self.train_sampler)
         
         #val_dataset = self.dataset(
         val_dataset = datasets.KITTIRAWDataset( 
-            'data_path/kitti', val_filenames, self.opt.height, self.opt.width,
+            self.opt.data_path, val_filenames, self.opt.height, self.opt.width,
             self.opt.frame_ids, 4, is_train=False, img_ext=img_ext)
+        if distributed:
+            val_sampler = DistributedSampler(val_dataset)
+        else:
+            val_sampler = None
         self.val_loader = DataLoader(
             val_dataset, self.opt.batch_size, True,
-            num_workers=self.opt.num_workers, pin_memory=True, drop_last=True)
+            num_workers=self.opt.num_workers, pin_memory=True, drop_last=True,sampler=val_sampler)
         self.val_iter = iter(self.val_loader)
 
 
@@ -125,10 +151,10 @@ class Trainer:
             h = self.opt.height // (2 ** scale)#defualt=[0,1,2,3]'scales used in the loss'
             w = self.opt.width // (2 ** scale)
 
-            self.backproject_depth[scale] = BackprojectDepth(self.opt.batch_size, h, w)#in layers.py
+            self.backproject_depth[scale] = BackprojectDepth(self.opt.batch_size //2, h, w)#in layers.py
             self.backproject_depth[scale].to(self.device)
 
-            self.project_3d[scale] = Project3D(self.opt.batch_size, h, w)
+            self.project_3d[scale] = Project3D(self.opt.batch_size //2, h, w)
             self.project_3d[scale].to(self.device)
 
         self.depth_metric_names = [
@@ -137,8 +163,8 @@ class Trainer:
         print("Using split:\n  ", self.opt.split)
         print("There are {:d} training items and {:d} validation items\n".format(
             len(train_dataset_k), len(val_dataset)))
-
-        self.save_opts()
+        if self.opt.local_rank == 0:
+            self.save_opts()
 
     def set_train(self):
         """Convert all models to training mode
@@ -166,7 +192,8 @@ class Trainer:
             self.epoch = self.epoch_start + self.epoch
             self.run_epoch()
             if (self.epoch + 1) % self.opt.save_frequency == 0:#number of epochs between each save defualt =1
-                self.save_model()
+                if self.opt.local_rank == 0:
+                    self.save_model()
         self.total_training_time = time.time() - self.init_time
         print('====>total training time:{}'.format(sec_to_hm_str(self.total_training_time)))
 
@@ -197,7 +224,6 @@ class Trainer:
                 if "depth_gt" in inputs:
                     self.compute_depth_losses(inputs, outputs, losses)
 
-                #self.log("train", inputs, outputs, losses)
                 self.val()
             self.step += 1
         
@@ -211,100 +237,22 @@ class Trainer:
         for key, ipt in inputs.items():#inputs.values() has :12x3x196x640.
             inputs[key] = ipt.to(self.device)#put tensor in gpu memory
 
-        if self.opt.pose_model_type == "shared":
-            # If we are using a shared encoder for both depth and pose (as advocated
-            # in monodepthv1), then all images are fed separately through the depth encoder.
-            all_color_aug = torch.cat([inputs[("color_aug", i, 0)] for i in self.opt.frame_ids])
-            all_features = self.models["encoder"](all_color_aug)#stacked frames processing color together
-            all_features = [torch.split(f, self.opt.batch_size) for f in all_features]#? what does inputs mean?
-
-            features = {}
-            for i, k in enumerate(self.opt.frame_ids):
-                features[k] = [f[i] for f in all_features]
-
-            outputs = self.models["depth"](features[0])
-        else:
-            # Otherwise, we only feed the image with frame_id 0 through the depth encoder
-            features = self.models["encoder"](inputs["color_aug", 0, 0])
-            
-            outputs = self.models["depth"](features)
-
-        if self.opt.predictive_mask:
-            outputs["predictive_mask"] = self.models["predictive_mask"](features)
-            #different form 1:*:* depth maps ,it will output 2:*:* mask maps
-
-        if self.use_pose_net:
-            outputs.update(self.predict_poses(inputs, features))
+        features = self.models["encoder"](inputs["color_aug", 0, 0])
+        outputs = self.models["depth"](features)
+        outputs.update(self.predict_poses(inputs))
 
         self.generate_images_pred(inputs, outputs)
         losses = self.compute_losses(inputs, outputs)
 
         return outputs, losses
 
-    def predict_poses(self, inputs, features):
+    def predict_poses(self, inputs):
         """Predict poses between input frames for monocular sequences.
         """
         outputs = {}
         if self.num_pose_frames == 2:
-            # In this setting, we compute the pose to each source frame via a
-            # separate forward pass through the pose network.
-
-            # select what features the pose network takes as input
-            if self.opt.pose_model_type == "shared":
-                pose_feats = {f_i: features[f_i] for f_i in self.opt.frame_ids}
-            else:
-                pose_feats = {f_i: inputs["color_aug", f_i, 0] for f_i in self.opt.frame_ids}
-            #pose_feats is a dict:
-            #key:
-            """"keys
-                0
-                -1
-                1
-            """
-            for f_i in self.opt.frame_ids[1:]:
-                #frame_ids = [0,-1,1]
-                if f_i != "s":
-                    # To maintain ordering we always pass frames in temporal order
-                    if f_i < 0:
-                        pose_inputs = [pose_feats[f_i], pose_feats[0]]#nerboring frames
-                    else:
-                        pose_inputs = [pose_feats[0], pose_feats[f_i]]
-
-                    if self.opt.pose_model_type == "separate_resnet":
-                        pose_inputs = [self.models["pose_encoder"](torch.cat(pose_inputs, 1))]
-                    elif self.opt.pose_model_type == "posecnn":
-                        pose_inputs = torch.cat(pose_inputs, 1)
-
-                    axisangle, translation = self.models["pose"](pose_inputs)
-                    outputs[("axisangle", 0, f_i)] = axisangle
-                    outputs[("translation", 0, f_i)] = translation
-                    #axisangle and translation are two 2*1*3 matrix
-                    #f_i=-1,1
-                    # Invert the matrix if the frame id is negative
-                    outputs[("cam_T_cam", 0, f_i)] = transformation_from_parameters(
-                        axisangle[:, 0], translation[:, 0], invert=(f_i < 0))
-
-        else:
-            # Here we input all frames to the pose net (and predict all poses) together
-            if self.opt.pose_model_type in ["separate_resnet", "posecnn"]:
-                pose_inputs = torch.cat(
-                    [inputs[("color_aug", i, 0)] for i in self.opt.frame_ids if i != "s"], 1)
-
-                if self.opt.pose_model_type == "separate_resnet":
-                    pose_inputs = [self.models["pose_encoder"](pose_inputs)]
-
-            elif self.opt.pose_model_type == "shared":
-                pose_inputs = [features[i] for i in self.opt.frame_ids if i != "s"]
-
-            axisangle, translation = self.models["pose"](pose_inputs)
-
-            for i, f_i in enumerate(self.opt.frame_ids[1:]):
-                if f_i != "s":
-                    outputs[("axisangle", 0, f_i)] = axisangle
-                    outputs[("translation", 0, f_i)] = translation
-                    outputs[("cam_T_cam", 0, f_i)] = transformation_from_parameters(
-                        axisangle[:, i], translation[:, i])
-
+            pose_feats = {f_i: inputs["color_aug", f_i, 0] for f_i in self.opt.frame_ids}
+            outputs = self.models["posenet"](pose_feats) 
         return outputs
 
     def val(self):
