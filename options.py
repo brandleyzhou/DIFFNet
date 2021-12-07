@@ -11,6 +11,9 @@ class MonodepthOptions:
         self.parser = argparse.ArgumentParser(description="Monodepthv2 options")
 
         # PATHS
+        self.parser.add_argument("--local_rank",
+                                type =int,
+                                default=0)
         self.parser.add_argument("--data_path",
                                  type=str,
                                  help="path to the training data",
