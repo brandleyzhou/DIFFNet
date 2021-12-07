@@ -18,6 +18,10 @@ If you think it is not a bad work, please consider citing it.
     }
 
 ```
+## Update:
+
+- a multi-gpu training version availible on multi-gpu branch.
+
 
 ## Comparing with others
 ![](images/table1.png)
@@ -43,8 +47,6 @@ If you think it is not a bad work, please consider citing it.
 ```
 sh start2train.sh
 ```
-
-* Note:
 
 ## Testing:
 
