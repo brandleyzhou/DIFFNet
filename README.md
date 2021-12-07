@@ -5,7 +5,6 @@ This repo is for **[Self-Supervised Monocular Depth Estimation with Internal Fea
  A new backbone for self-supervised depth estimation.
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/self-supervised-monocular-depthestimation/monocular-depth-estimation-on-kitti-eigen-1)](https://paperswithcode.com/sota/monocular-depth-estimation-on-kitti-eigen-1?p=self-supervised-monocular-depthestimation)
-The SOTA model access: [diffnet_1024x320_ms_ttr](https://drive.google.com/file/d/1u4pizvk9xZ8bbyWLyjd0m_9hnm_mO9-Q/view?usp=sharing)
 
 
 If you think it is not a bad work, please consider citing it.
@@ -20,7 +19,7 @@ If you think it is not a bad work, please consider citing it.
 ```
 ## Update:
 
-- a multi-gpu training version availible on multi-gpu branch.
+- [07-12-2021] A multi-gpu training version availible on multi-gpu branch.
 
 
 ## Comparing with others
