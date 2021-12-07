@@ -61,41 +61,16 @@ class Trainer:
         self.parameters_to_train += list(self.models["encoder"].parameters())
         self.models["depth"].to(self.device)
         self.parameters_to_train += list(self.models["depth"].parameters())
-        para_sum = sum(p.numel() for p in self.models['depth'].parameters())
-        print('params in depth decdoer',para_sum)
 
-        if self.use_pose_net:#use_pose_net = True
-            if self.opt.pose_model_type == "separate_resnet":#defualt=separate_resnet  choice = ['normal or shared']
+        self.models["posenet"] = networks.PoseNet(
+            self.opt.num_layers,
+            self.opt.weights_init == "pretrained",
+            num_input_images=self.num_pose_frames)
                 
-                self.models["pose_encoder"] = networks.ResnetEncoder(
-                    self.opt.num_layers,
-                    self.opt.weights_init == "pretrained",
-                    num_input_images=self.num_pose_frames)#num_input_images=2
-                
-                self.models["pose"] = networks.PoseDecoder(
-                    self.models["pose_encoder"].num_ch_enc,
-                    num_input_features=1,
-                    num_frames_to_predict_for=2)
-
-            self.models["pose_encoder"].cuda()
-            self.models["pose"].cuda()
-
-            self.parameters_to_train += list(self.models["pose"].parameters())
-            self.parameters_to_train += list(self.models["pose_encoder"].parameters())
-        if self.opt.predictive_mask:
-            #defualt = store_true 'uses a predictive mask like Zhou's'
-            assert self.opt.disable_automasking, \
-                "When using predictive_mask, please disable automasking with --disable_automasking"
-
-            self.models["predictive_mask"] = networks.DepthDecoder(
-                self.models["encoder"].num_ch_enc, self.opt.scales,
-                num_output_channels=(len(self.opt.frame_ids) - 1))
-            self.models["predictive_mask"].to(self.device)
-            self.parameters_to_train += list(self.models["predictive_mask"].parameters())
-
+        self.models["posenet"].cuda()
+        self.parameters_to_train += list(self.models["posenet"].parameters())
         
-        #self.model_optimizer = optim.Adam(self.parameters_to_train, self.opt.learning_rate)#learning_rate=1e-4
-        self.model_optimizer = optim.Adam(self.parameters_to_train, 0.5 * self.opt.learning_rate)#learning_rate=1e-4
+        self.model_optimizer = optim.Adam(self.parameters_to_train, self.opt.learning_rate)#learning_rate=1e-4
         self.model_lr_scheduler = optim.lr_scheduler.StepLR(
             self.model_optimizer, self.opt.scheduler_step_size, 0.1)#defualt = 15'step size of the scheduler'
 
