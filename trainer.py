@@ -70,6 +70,7 @@ class Trainer:
             self.models["encoder"].num_ch_enc, self.opt.scales)
         
         
+        self.models["encoder"] = nn.SyncBatchNorm.convert_sync_batchnorm(self.models["encoder"])
         self.models["encoder"].to(self.device)
         self.models["depth"].to(self.device)
         self.models["encoder"] = nn.parallel.DistributedDataParallel(
@@ -83,6 +84,7 @@ class Trainer:
             self.opt.num_layers,
             num_input_images=self.num_pose_frames)
                 
+        self.models["posenet"] = nn.SyncBatchNorm.convert_sync_batchnorm(self.models["posenet"])
         self.models["posenet"].to(self.device)
         self.models["posenet"] = nn.parallel.DistributedDataParallel(
                 self.models["posenet"], device_ids= [self.opt.local_rank], output_device=self.opt.local_rank,find_unused_parameters=True)
@@ -209,7 +211,9 @@ class Trainer:
             before_op_time = time.time()
             outputs, losses = self.process_batch(inputs)
             self.model_optimizer.zero_grad()
-            losses["loss"].backward()
+            loss = reduce_tensor(losses["loss"])
+            loss.backward()
+            #losses["loss"].backward()
             self.model_optimizer.step()
 
             duration = time.time() - before_op_time

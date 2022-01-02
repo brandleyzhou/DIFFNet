@@ -106,8 +106,16 @@ def evaluate(opt):
         depth_decoder = networks.HRDepthDecoder(encoder.num_ch_enc, opt.scales)
         model_dict = encoder.state_dict()
         dec_model_dict = depth_decoder.state_dict()
-        encoder.load_state_dict({k: v for k, v in encoder_dict.items() if k in model_dict})
-        depth_decoder.load_state_dict({k: v for k, v in decoder_dict.items() if k in dec_model_dict})
+        encoder_dict_single = {}
+        decoder_dict_single = {}
+        for k,v in encoder_dict.items():
+            k = k[7:]
+            encoder_dict_single[k] = v
+        for k,v in decoder_dict.items():
+            k = k[7:]
+            decoder_dict_single[k] = v
+        encoder.load_state_dict({k: v for k, v in encoder_dict_single.items() if k in model_dict})
+        depth_decoder.load_state_dict({k: v for k, v in decoder_dict_single.items() if k in dec_model_dict})
         
         encoder.cuda() if torch.cuda.is_available() else encoder.cpu()
         encoder.eval()
