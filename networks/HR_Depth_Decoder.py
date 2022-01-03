@@ -60,4 +60,3 @@ class HRDepthDecoder(nn.Module):
         outputs[("disp",2)] = self.sigmoid(self.convs["dispConvScale2"](x18))
         outputs[("disp",3)] = self.sigmoid(self.convs["dispConvScale3"](x36))
         return outputs
-        
