@@ -7,7 +7,7 @@ This repo is for **[Self-Supervised Monocular Depth Estimation with Internal Fea
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/self-supervised-monocular-depthestimation/monocular-depth-estimation-on-kitti-eigen-1)](https://paperswithcode.com/sota/monocular-depth-estimation-on-kitti-eigen-1?p=self-supervised-monocular-depthestimation)
 
 
-If you think it is not a bad work, please consider citing it.
+If you think it is a useful work, please consider citing it.
 ```
 @inproceedings{zhou_diffnet,
     title={Self-Supervised Monocular Depth Estimation with Internal Feature Fusion},
@@ -29,13 +29,13 @@ If you think it is not a bad work, please consider citing it.
 ![](images/table2.png)
 
 ## Trained weights
-
-- [diffnet_1024x320_ms_ttr](https://drive.google.com/file/d/1u4pizvk9xZ8bbyWLyjd0m_9hnm_mO9-Q/view?usp=sharing) (the SOTA one)
-- [diffnet_1024_320_ms](https://drive.google.com/file/d/1VR0BYXKyclvv1Gq2XcQCR-fvJuFQ80SI/view?usp=sharing)
-- [diffnet_640x192](https://drive.google.com/file/d/1ZQPZWsIy_KyjV-Et6FSCOPM4iATjDPn-/view?usp=sharing)
-- [diffnet_640x192_ms](https://drive.google.com/file/d/1_vh1F_cabTlEjBGXkHZOpAB1CMLmosxg/view?usp=sharing)
-- [diffnet_1024x320](https://drive.google.com/file/d/1SuyBMS3ZLYuZwgyGSpmNrag7ESjRUC52/view?usp=sharing)
-- [diffnet_1024x320_ttr](https://drive.google.com/file/d/1R0b0GYUxyZeaVCHQEELHevHoegwFi3qU/view?usp=sharing)
+| Methods |abs rel|sq rel| RMSE |rmse log | D1 | D2 | D3 |
+| :----------- | :-----: | :----: | :---: | :------: | :--------: |:--------: |:--------: |
+- [1024x320](https://drive.google.com/file/d/1SuyBMS3ZLYuZwgyGSpmNrag7ESjRUC52/view?usp=sharing)|0.097|0.722|4.345|0.174|0.907|0.967|0.984|
+- [1024x320_ms_ttr](https://drive.google.com/file/d/1u4pizvk9xZ8bbyWLyjd0m_9hnm_mO9-Q/view?usp=sharing)|0.079|0.640|3.934|0.159|0.932|0.971|0.984 | 
+- [1024_320_ms](https://drive.google.com/file/d/1VR0BYXKyclvv1Gq2XcQCR-fvJuFQ80SI/view?usp=sharing)|0.094|0.678|4.250|0.172|0.911|0.968|0.984|
+- [640x192](https://drive.google.com/file/d/1ZQPZWsIy_KyjV-Et6FSCOPM4iATjDPn-/view?usp=sharing)|0.102|0.764|4.483|0.180|0.896|0.965|0.983|
+- [640x192_ms](https://drive.google.com/file/d/1_vh1F_cabTlEjBGXkHZOpAB1CMLmosxg/view?usp=sharing)|0.101|0.749|4.445|0.179|0.898|0.965|0.983|
 
 ## Setting up before training and testing
 
