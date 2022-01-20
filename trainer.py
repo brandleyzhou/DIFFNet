@@ -284,42 +284,22 @@ class Trainer:
                     else:
                         pose_inputs = [pose_feats[0], pose_feats[f_i]]
 
-                    if self.opt.pose_model_type == "separate_resnet":
-                        pose_inputs = [self.models["pose_encoder"](torch.cat(pose_inputs, 1))]
-                    elif self.opt.pose_model_type == "posecnn":
-                        pose_inputs = torch.cat(pose_inputs, 1)
-
+                    pose_inputs = [self.models["pose_encoder"](torch.cat(pose_inputs, 1))]
                     axisangle, translation = self.models["pose"](pose_inputs)
                     outputs[("axisangle", 0, f_i)] = axisangle
                     outputs[("translation", 0, f_i)] = translation
-                    #axisangle and translation are two 2*1*3 matrix
-                    #f_i=-1,1
-                    # Invert the matrix if the frame id is negative
                     outputs[("cam_T_cam", 0, f_i)] = transformation_from_parameters(
                         axisangle[:, 0], translation[:, 0], invert=(f_i < 0))
-
-        else:
-            # Here we input all frames to the pose net (and predict all poses) together
-            if self.opt.pose_model_type in ["separate_resnet", "posecnn"]:
-                pose_inputs = torch.cat(
-                    [inputs[("color_aug", i, 0)] for i in self.opt.frame_ids if i != "s"], 1)
-
-                if self.opt.pose_model_type == "separate_resnet":
-                    pose_inputs = [self.models["pose_encoder"](pose_inputs)]
-
-            elif self.opt.pose_model_type == "shared":
-                pose_inputs = [features[i] for i in self.opt.frame_ids if i != "s"]
-
-            axisangle, translation = self.models["pose"](pose_inputs)
-
-            for i, f_i in enumerate(self.opt.frame_ids[1:]):
-                if f_i != "s":
-                    outputs[("axisangle", 0, f_i)] = axisangle
-                    outputs[("translation", 0, f_i)] = translation
-                    outputs[("cam_T_cam", 0, f_i)] = transformation_from_parameters(
-                        axisangle[:, i], translation[:, i])
-
+        outputs[("cam_T_cam_from_geometry", -1, 1)] = torch.matmul(F.inverse(outputs[("cam_T_cam",0,-1)]), outputs[("cam_T_cam",0,1)])
+        outputs[("cam_T_cam_from_posenet", -1, 1)] = self.compute_pose_sequence(inputs("color_aug", -1, 0), inputs("color_aug", 1, 0))
         return outputs
+
+    def compute_pose_sequence(self, image0, image1):
+        pose_inputs = [self.models["pose_encoder"](torch.cat([image0,image1], 1))]
+        axisangle, translation = self.models["pose"](pose_inputs)
+        pose_change = transformation_from_parameters(
+            axisangle[:, 0], translation[:, 0], invert=False)
+        return pose_change
 
     def val(self):
         """Validate the model on a single minibatch
@@ -365,18 +345,6 @@ class Trainer:
                     T = inputs["stereo_T"]
                 else:
                     T = outputs[("cam_T_cam", 0, frame_id)]
-
-                # from the authors of https://arxiv.org/abs/1712.00175
-                if self.opt.pose_model_type == "posecnn":
-
-                    axisangle = outputs[("axisangle", 0, frame_id)]
-                    translation = outputs[("translation", 0, frame_id)]
-
-                    inv_depth = 1 / depth
-                    mean_inv_depth = inv_depth.mean(3, True).mean(2, True)
-
-                    T = transformation_from_parameters(
-                        axisangle[:, 0], translation[:, 0] * mean_inv_depth[:, 0], frame_id < 0)
 
                 cam_points = self.backproject_depth[source_scale](
                     depth, inputs[("inv_K", source_scale)])
@@ -499,7 +467,9 @@ class Trainer:
             losses["loss/{}".format(scale)] = loss
         
         total_loss /= self.num_scales
-        losses["loss"] = total_loss 
+        pose_loss = torch.abs(outputs["cam_T_cam_from_geometry",-1,1] - outputs["cam_T_cam_from_pose",-1,1]).mean()
+        print(total_loss.cpu(), pose_loss.cpu())
+        losses["loss"] = total_loss + pose_loss 
         return losses
 
     def compute_depth_losses(self, inputs, outputs, losses):
