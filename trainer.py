@@ -288,10 +288,13 @@ class Trainer:
                     axisangle, translation = self.models["pose"](pose_inputs)
                     outputs[("axisangle", 0, f_i)] = axisangle
                     outputs[("translation", 0, f_i)] = translation
+                    if f_i == -1:
+                        outputs[("cam_T_cam", -1, 0)] = transformation_from_parameters(
+                            axisangle[:, 0], translation[:, 0], invert=False)
                     outputs[("cam_T_cam", 0, f_i)] = transformation_from_parameters(
                         axisangle[:, 0], translation[:, 0], invert=(f_i < 0))
-        outputs[("cam_T_cam_from_geometry", -1, 1)] = torch.matmul(outputs[("cam_T_cam",0,1)], torch.inverse(outputs[("cam_T_cam",0,-1)]))
-        outputs[("cam_T_cam_from_posenet", -1, 1)] = self.compute_pose_sequence(inputs[("color_aug", -1, 0)], inputs[("color_aug", 1, 0)])
+        outputs[("cam_T_cam_from_geometry", -1, 1)] = torch.matmul(outputs[("cam_T_cam",0,1)], outputs[("cam_T_cam", -1, 0)])[-1,:3,:3]
+        outputs[("cam_T_cam_from_posenet", -1, 1)] = self.compute_pose_sequence(inputs[("color_aug", -1, 0)], inputs[("color_aug", 1, 0)])[-1,:3,:3]
         return outputs
 
     def compute_pose_sequence(self, image0, image1):
@@ -436,13 +439,7 @@ class Trainer:
                 reprojection_loss = reprojection_losses
 
             if not self.opt.disable_automasking:
-                #doing_this
-                # add random numbers to break ties
-                    #identity_reprojection_loss.shape).cuda() * 0.00001
-                if torch.cuda.is_available():
-                    identity_reprojection_loss += torch.randn(identity_reprojection_loss.shape).cuda() * 0.00001
-                else:
-                    identity_reprojection_loss += torch.randn(identity_reprojection_loss.shape).cpu() * 0.00001
+                identity_reprojection_loss += torch.randn(identity_reprojection_loss.shape).cuda() * 0.00001
                 combined = torch.cat((identity_reprojection_loss, reprojection_loss), dim=1)
             else:
                 combined = reprojection_loss
@@ -467,7 +464,7 @@ class Trainer:
             losses["loss/{}".format(scale)] = loss
         
         total_loss /= self.num_scales
-        pose_loss = torch.abs(outputs["cam_T_cam_from_geometry",-1,1] - outputs["cam_T_cam_from_posenet",-1,1]).mean()
+        pose_loss = (torch.abs((outputs["cam_T_cam_from_geometry",-1,1] - outputs["cam_T_cam_from_posenet",-1,1])) / torch.abs(outputs["cam_T_cam_from_geometry",-1,1])).mean()
         print(total_loss.cpu(), pose_loss.cpu())
         losses["loss"] = total_loss + pose_loss 
         return losses
