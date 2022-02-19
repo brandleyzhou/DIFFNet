@@ -13,8 +13,7 @@ import torch
 from torchvision import transforms, datasets
 from cv2 import imwrite
 import networks
-import hr_networks
-from layers import disp_to_depth
+from layers import *
 from utils import download_model_if_doesnt_exist
 
 
@@ -45,6 +44,30 @@ def parse_args():
                             help='if set, disables CUDA',
                             action='store_true')
     return parser.parse_args()
+
+def generate_surface_normal(pc, height, width):
+    ranges = 3 
+    origin = [height - 1, width // 2 - 1]
+    sample_yz = []
+    sample_zx = []
+    for i in range(ranges):
+        sample_yz.append(pc[0, :, origin[0] - i, origin[1]]) 
+        sample_yx.append(pc[1, :, origin[0], origin[1] + i])
+    # least square for sampled points
+
+
+def generate_ground_map(width, height, depth):
+    project_to_point_cloud = BackprojectDepth(1, height, width).to("cuda")
+
+    K = np.array([[0.58, 0, 0.5, 0],
+                  [0, 1.92, 0.5, 0],
+                  [0, 0, 1, 0],
+                  [0, 0, 0, 1]], dtype=np.float32)
+    K[0,:] *= width
+    K[1,:] *= height
+    inv_K = np.linalg.pinv(K)
+    point_cloud = project_to_point_cloud(depth, torch.from_numpy(inv_K).unsqueeze(0).to("cuda"))
+    surface_normal = generate_surface_normal(point_cloud, height, depth) 
 
 def test_simple(args):
     """Function to predict for a single image or folder of images
@@ -128,9 +151,6 @@ def test_simple(args):
 
             # PREDICTION
             input_image = input_image.to(device)
-            
-            rgb1 = rgb.permute(1,2,0).detach().cpu().numpy() * 255
-            
             features = encoder(input_image)
             outputs = depth_decoder(features)
 
@@ -148,25 +168,14 @@ def test_simple(args):
 
             # Saving colormapped depth image
             disp_resized_np = disp_resized.squeeze().cpu().numpy()
-            print(disp_resized_np.shape)
             vmax = np.percentile(disp_resized_np, 95)
             normalizer = mpl.colors.Normalize(vmin=disp_resized_np.min(), vmax=vmax)
             mapper = cm.ScalarMappable(norm=normalizer, cmap='magma')
             colormapped_im = (mapper.to_rgba(disp_resized_np)[:, :, :3] * 255).astype(np.uint8)
             im = pil.fromarray(colormapped_im)
             name_dest_im = os.path.join('results',"{}_disp.jpeg".format(image_name))
-            
-            # concatenate both vertically
-            #image = np.concatenate([rgb1, im], 0)
-            # save a grey scale map for point cloud viz
-            #depth_resized = depth_resized.squeeze().cpu().numpy()
-            scaled_disp = (50 / scaled_disp).squeeze().cpu().numpy()
-            #scaled_disp = scaled_disp.squeeze().cpu().numpy()
-            im_grey = pil.fromarray(np.uint8((scaled_disp * 255)),'L')
-            name_grey_depth = os.path.join('results',"{}_grey_disp.png".format(image_name))
-            name_corped_rgb = os.path.join('results',"rgb.png")
-            im_grey.save(name_grey_depth) 
-            input_r.save(name_corped_rgb)
+            #ground_map = generate_ground_map(original_width, original_height, depth_resized)
+            ground_map = generate_ground_map(640 , 192 , depth_resized)
             #just save a single depth
             im.save(name_dest_im)
 
