@@ -5,9 +5,9 @@ import torch.nn as nn
 from collections import OrderedDict
 
 
-class PoseDecoder(nn.Module):
+class PoseDecoderv1(nn.Module):
     def __init__(self, num_ch_enc, num_input_features, num_frames_to_predict_for=None, stride=1):
-        super(PoseDecoder, self).__init__()
+        super(PoseDecoderv1, self).__init__()
         #num_ch_enc = [64,64,128,256,512]
         #num_input_features = 1
         #num_frames_to_predict_for = 2
@@ -20,10 +20,11 @@ class PoseDecoder(nn.Module):
 
         self.convs = OrderedDict()
         self.convs[("squeeze")] = nn.Conv2d(self.num_ch_enc[-1], 256, 1)
-        self.convs[("pose", 0)] = nn.Conv2d(num_input_features * 256, 256, 3, stride, 1)
-        self.convs[("pose", 1)] = nn.Conv2d(256, 256, 3, stride, 1)
-        #self.convs[("pose", 2)] = nn.Conv2d(256, 6 * num_frames_to_predict_for, 1)
-        self.convs[("pose", 2)] = nn.Conv2d(256, 6, 1)
+        self.convs[("pose", 0)] = nn.Conv2d(256, 128, 3, stride, 1)
+        self.convs[("pose", 1)] = nn.Conv2d(128, 64, 3, stride, 1)
+        self.convs[("pose", 2)] = nn.Conv2d(64, 32, 3)
+        self.convs[("pose", 3)] = nn.Conv2d(32, 16, 3)
+        self.convs[("pose", 4)] = nn.Conv2d(16, 6, 1)
 
         self.relu = nn.ReLU()#in depthdecoder activation function is sigmoid()
 
@@ -35,9 +36,9 @@ class PoseDecoder(nn.Module):
         cat_features = [self.relu(self.convs["squeeze"](f)) for f in last_features]
         cat_features = torch.cat(cat_features,1)
         out = cat_features
-        for i in range(3):
+        for i in range(5):
             out = self.convs[("pose", i)](out)
-            if i != 2:
+            if i != 4:
                 out = self.relu(out)
 
         out = out.mean(3).mean(2)

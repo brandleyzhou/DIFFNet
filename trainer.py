@@ -72,7 +72,7 @@ class Trainer:
                     self.opt.weights_init == "pretrained",
                     num_input_images=self.num_pose_frames)#num_input_images=2
                 
-                self.models["pose"] = networks.PoseDecoder(
+                self.models["pose"] = networks.PoseDecoderv1(
                     self.models["pose_encoder"].num_ch_enc,
                     num_input_features=1,
                     num_frames_to_predict_for=2)
@@ -294,9 +294,9 @@ class Trainer:
                     #        #axisangle[:, 1], translation[:, 1], invert=False)
                     #        torch.mean(axisangle, 1), torch.mean(translation, 1), invert=False)
                     outputs[("cam_T_cam", 0, f_i)] = transformation_from_parameters(
-                        #axisangle[:, 0], translation[:, 0], invert=(f_i < 0))
+                        axisangle[:, 0], translation[:, 0], invert=(f_i < 0))
                         #axisangle[:, 1], translation[:, 1], invert=(f_i < 0))
-                        torch.mean(axisangle, 1), torch.mean(translation, 1), invert=(f_i < 0))
+                        #torch.mean(axisangle, 1), torch.mean(translation, 1), invert=(f_i < 0))
         #outputs[("cam_T_cam_from_geometry", -1, 1)] = torch.matmul(outputs[("cam_T_cam",0,1)], outputs[("cam_T_cam", -1, 0)]).detach()
         #outputs[("cam_T_cam_from_posenet", -1, 1)] = self.compute_pose_sequence(inputs[("color_aug", -1, 0)], inputs[("color_aug", 1, 0)])
         return outputs
