@@ -22,9 +22,11 @@ class PoseDecoderv1(nn.Module):
         self.convs[("squeeze")] = nn.Conv2d(self.num_ch_enc[-1], 256, 1)
         self.convs[("pose", 0)] = nn.Conv2d(256, 128, 3, stride, 1)
         self.convs[("pose", 1)] = nn.Conv2d(128, 64, 3, stride, 1)
+        #self.convs[("pose", 1)] = nn.Linear(128*6*20, 6)
         self.convs[("pose", 2)] = nn.Conv2d(64, 32, 3)
+        #self.convs[("pose", 2)] = nn.Linear(64*6*20, 6)
         self.convs[("pose", 3)] = nn.Conv2d(32, 16, 3)
-        self.convs[("pose", 4)] = nn.Conv2d(16, 6, 1)
+        self.convs[("pose", 4)] = nn.Linear(16*32, 6)
 
         self.relu = nn.ReLU()#in depthdecoder activation function is sigmoid()
 
@@ -37,11 +39,13 @@ class PoseDecoderv1(nn.Module):
         cat_features = torch.cat(cat_features,1)
         out = cat_features
         for i in range(5):
+            if i == 4:
+                out = self.convs[("pose", i)](out.view(8, -1))
+                break
             out = self.convs[("pose", i)](out)
             if i != 4:
                 out = self.relu(out)
-
-        out = out.mean(3).mean(2)
+        #out = out.mean(3).mean(2)
         out = 0.01 * out.view(-1, 1, 1, 6)
         axisangle = out[..., :3]
         translation = out[..., 3:]

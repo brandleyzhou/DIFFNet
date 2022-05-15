@@ -72,7 +72,7 @@ class Trainer:
                     self.opt.weights_init == "pretrained",
                     num_input_images=self.num_pose_frames)#num_input_images=2
                 
-                self.models["pose"] = networks.PoseDecoderv1(
+                self.models["pose"] = networks.PoseDecoder(
                     self.models["pose_encoder"].num_ch_enc,
                     num_input_features=1,
                     num_frames_to_predict_for=2)
@@ -358,18 +358,21 @@ class Trainer:
                 pix_coords = self.project_3d[source_scale](
                     cam_points, inputs[("K", source_scale)], T)
                 outputs[("sample", frame_id, scale)] = pix_coords
-
+                
                 outputs[("color", frame_id, scale)] = F.grid_sample(
                     inputs[("color", frame_id, source_scale)],
                     outputs[("sample", frame_id, scale)],
                     padding_mode="border")
-
+                
+                mask = torch.ones_like(inputs[("color", frame_id, source_scale)], requires_grad=False)
+                mask = F.grid_sample(mask, outputs[("sample", frame_id, scale)])
+                outputs[("mask", frame_id, scale)] = (mask >= 1.0).float()
                 if not self.opt.disable_automasking:
                     #doing this
                     outputs[("color_identity", frame_id, scale)] = \
                         inputs[("color", frame_id, source_scale)]
 
-    def compute_reprojection_loss(self, pred, target):
+    def compute_reprojection_loss(self, pred, target, mask):
         """Computes reprojection loss between a batch of predicted and target images
         """
         abs_diff = torch.abs(target - pred)
@@ -381,7 +384,7 @@ class Trainer:
             ssim_loss = self.ssim(pred, target).mean(1, True)
             reprojection_loss = 0.85 * ssim_loss + 0.15 * l1_loss
 
-        return reprojection_loss
+        return reprojection_loss * mask
 
     def compute_losses(self, inputs, outputs):
         """Compute the reprojection and smoothness losses for a minibatch
@@ -405,7 +408,8 @@ class Trainer:
 
             for frame_id in self.opt.frame_ids[1:]:
                 pred = outputs[("color", frame_id, scale)]
-                reprojection_losses.append(self.compute_reprojection_loss(pred, target))
+                mask = outputs[("mask", frame_id, scale)]
+                reprojection_losses.append(self.compute_reprojection_loss(pred, target, mask))
             reprojection_losses = torch.cat(reprojection_losses, 1)
             if not self.opt.disable_automasking:
                 #doing this 
@@ -413,7 +417,7 @@ class Trainer:
                 for frame_id in self.opt.frame_ids[1:]:
                     pred = inputs[("color", frame_id, source_scale)]
                     identity_reprojection_losses.append(
-                        self.compute_reprojection_loss(pred, target))
+                        self.compute_reprojection_loss(pred, target, mask))
 
                 identity_reprojection_losses = torch.cat(identity_reprojection_losses, 1)
                 if self.opt.avg_reprojection:
