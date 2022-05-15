@@ -1,1 +1,1 @@
-python test_sample_v2.py --image_path test1.jpg --model_folder ~/scratch/model_archive --model_name diffnet_640x192
+python test_sample.py --image_path image path --model_folder path to trained models --model_name which epoch

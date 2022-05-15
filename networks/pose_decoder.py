@@ -22,8 +22,7 @@ class PoseDecoder(nn.Module):
         self.convs[("squeeze")] = nn.Conv2d(self.num_ch_enc[-1], 256, 1)
         self.convs[("pose", 0)] = nn.Conv2d(num_input_features * 256, 256, 3, stride, 1)
         self.convs[("pose", 1)] = nn.Conv2d(256, 256, 3, stride, 1)
-        #self.convs[("pose", 2)] = nn.Conv2d(256, 6 * num_frames_to_predict_for, 1)
-        self.convs[("pose", 2)] = nn.Conv2d(256, 6, 1)
+        self.convs[("pose", 2)] = nn.Conv2d(256, 6 * num_frames_to_predict_for, 1)
 
         self.relu = nn.ReLU()#in depthdecoder activation function is sigmoid()
 
@@ -32,6 +31,8 @@ class PoseDecoder(nn.Module):
     def forward(self, input_features):
         #input_features is a list which just has a element but the element has 5 scales feature maps. 
         last_features = [f[-1] for f in input_features]#only collect last_feature?
+        #so last_features only has a 512*6*20 feature map
+        #print(last_features[0].size())
         cat_features = [self.relu(self.convs["squeeze"](f)) for f in last_features]
         cat_features = torch.cat(cat_features,1)
         out = cat_features
@@ -41,7 +42,13 @@ class PoseDecoder(nn.Module):
                 out = self.relu(out)
 
         out = out.mean(3).mean(2)
-        out = 0.01 * out.view(-1, 1, 1, 6)
+        #out.size = 12*12
+        out = 0.01 * out.view(-1, self.num_frames_to_predict_for, 1, 6)
+        #out.size = 12 * 2 * 1 * 6
         axisangle = out[..., :3]
         translation = out[..., 3:]
+        #print(axisangle.size())
+        #print(translation.size())
+        #input()
         return axisangle, translation
+        #return 2 tensors which size is 12 * 2 * 1 * 3 

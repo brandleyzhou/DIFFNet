@@ -67,4 +67,3 @@ sh test_sample.sh
  - [monodepth2](https://github.com/nianticlabs/monodepth2)
  - [HRNet](https://github.com/HRNet/HRNet-Semantic-Segmentation)
 
-# season_depth

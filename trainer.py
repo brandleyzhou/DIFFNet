@@ -15,7 +15,6 @@ from kitti_utils import *
 from layers import *
 import datasets
 import networks
-from IPython import embed
 
 class Trainer:
     def __init__(self, options):
@@ -120,7 +119,7 @@ class Trainer:
         
         #val_dataset = self.dataset(
         val_dataset = datasets.KITTIRAWDataset( 
-            'data_path/kitti', val_filenames, self.opt.height, self.opt.width,
+            'data_path/kitti_data', val_filenames, self.opt.height, self.opt.width,
             self.opt.frame_ids, 4, is_train=False, img_ext=img_ext)
         self.val_loader = DataLoader(
             val_dataset, self.opt.batch_size, True,
@@ -284,20 +283,42 @@ class Trainer:
                     else:
                         pose_inputs = [pose_feats[0], pose_feats[f_i]]
 
-                    pose_inputs = [self.models["pose_encoder"](torch.cat(pose_inputs, 1))]
+                    if self.opt.pose_model_type == "separate_resnet":
+                        pose_inputs = [self.models["pose_encoder"](torch.cat(pose_inputs, 1))]
+                    elif self.opt.pose_model_type == "posecnn":
+                        pose_inputs = torch.cat(pose_inputs, 1)
+
                     axisangle, translation = self.models["pose"](pose_inputs)
                     outputs[("axisangle", 0, f_i)] = axisangle
                     outputs[("translation", 0, f_i)] = translation
+                    #axisangle and translation are two 2*1*3 matrix
+                    #f_i=-1,1
+                    # Invert the matrix if the frame id is negative
                     outputs[("cam_T_cam", 0, f_i)] = transformation_from_parameters(
                         axisangle[:, 0], translation[:, 0], invert=(f_i < 0))
-        return outputs
 
-    def compute_pose_sequence(self, image0, image1):
-        pose_inputs = [self.models["pose_encoder"](torch.cat([image0,image1], 1))]
-        axisangle, translation = self.models["pose"](pose_inputs)
-        pose_change = transformation_from_parameters(
-            axisangle[:, 0], translation[:, 0], invert=False)
-        return pose_change
+        else:
+            # Here we input all frames to the pose net (and predict all poses) together
+            if self.opt.pose_model_type in ["separate_resnet", "posecnn"]:
+                pose_inputs = torch.cat(
+                    [inputs[("color_aug", i, 0)] for i in self.opt.frame_ids if i != "s"], 1)
+
+                if self.opt.pose_model_type == "separate_resnet":
+                    pose_inputs = [self.models["pose_encoder"](pose_inputs)]
+
+            elif self.opt.pose_model_type == "shared":
+                pose_inputs = [features[i] for i in self.opt.frame_ids if i != "s"]
+
+            axisangle, translation = self.models["pose"](pose_inputs)
+
+            for i, f_i in enumerate(self.opt.frame_ids[1:]):
+                if f_i != "s":
+                    outputs[("axisangle", 0, f_i)] = axisangle
+                    outputs[("translation", 0, f_i)] = translation
+                    outputs[("cam_T_cam", 0, f_i)] = transformation_from_parameters(
+                        axisangle[:, i], translation[:, i])
+
+        return outputs
 
     def val(self):
         """Validate the model on a single minibatch
@@ -344,26 +365,35 @@ class Trainer:
                 else:
                     T = outputs[("cam_T_cam", 0, frame_id)]
 
+                # from the authors of https://arxiv.org/abs/1712.00175
+                if self.opt.pose_model_type == "posecnn":
+
+                    axisangle = outputs[("axisangle", 0, frame_id)]
+                    translation = outputs[("translation", 0, frame_id)]
+
+                    inv_depth = 1 / depth
+                    mean_inv_depth = inv_depth.mean(3, True).mean(2, True)
+
+                    T = transformation_from_parameters(
+                        axisangle[:, 0], translation[:, 0] * mean_inv_depth[:, 0], frame_id < 0)
+
                 cam_points = self.backproject_depth[source_scale](
                     depth, inputs[("inv_K", source_scale)])
                 pix_coords = self.project_3d[source_scale](
                     cam_points, inputs[("K", source_scale)], T)
                 outputs[("sample", frame_id, scale)] = pix_coords
-                
+
                 outputs[("color", frame_id, scale)] = F.grid_sample(
                     inputs[("color", frame_id, source_scale)],
                     outputs[("sample", frame_id, scale)],
                     padding_mode="border")
-                
-                mask = torch.ones_like(inputs[("color", frame_id, source_scale)], requires_grad=False)
-                mask = F.grid_sample(mask, outputs[("sample", frame_id, scale)])
-                outputs[("mask", frame_id, scale)] = (mask >= 1.0).float()
+
                 if not self.opt.disable_automasking:
                     #doing this
                     outputs[("color_identity", frame_id, scale)] = \
                         inputs[("color", frame_id, source_scale)]
 
-    def compute_reprojection_loss(self, pred, target, mask):
+    def compute_reprojection_loss(self, pred, target):
         """Computes reprojection loss between a batch of predicted and target images
         """
         abs_diff = torch.abs(target - pred)
@@ -375,7 +405,7 @@ class Trainer:
             ssim_loss = self.ssim(pred, target).mean(1, True)
             reprojection_loss = 0.85 * ssim_loss + 0.15 * l1_loss
 
-        return reprojection_loss * mask
+        return reprojection_loss
 
     def compute_losses(self, inputs, outputs):
         """Compute the reprojection and smoothness losses for a minibatch
@@ -399,8 +429,7 @@ class Trainer:
 
             for frame_id in self.opt.frame_ids[1:]:
                 pred = outputs[("color", frame_id, scale)]
-                mask = outputs[("mask", frame_id, scale)]
-                reprojection_losses.append(self.compute_reprojection_loss(pred, target, mask))
+                reprojection_losses.append(self.compute_reprojection_loss(pred, target))
             reprojection_losses = torch.cat(reprojection_losses, 1)
             if not self.opt.disable_automasking:
                 #doing this 
@@ -408,7 +437,7 @@ class Trainer:
                 for frame_id in self.opt.frame_ids[1:]:
                     pred = inputs[("color", frame_id, source_scale)]
                     identity_reprojection_losses.append(
-                        self.compute_reprojection_loss(pred, target, mask))
+                        self.compute_reprojection_loss(pred, target))
 
                 identity_reprojection_losses = torch.cat(identity_reprojection_losses, 1)
                 if self.opt.avg_reprojection:
@@ -438,7 +467,13 @@ class Trainer:
                 reprojection_loss = reprojection_losses
 
             if not self.opt.disable_automasking:
-                identity_reprojection_loss += torch.randn(identity_reprojection_loss.shape).cuda() * 0.00001
+                #doing_this
+                # add random numbers to break ties
+                    #identity_reprojection_loss.shape).cuda() * 0.00001
+                if torch.cuda.is_available():
+                    identity_reprojection_loss += torch.randn(identity_reprojection_loss.shape).cuda() * 0.00001
+                else:
+                    identity_reprojection_loss += torch.randn(identity_reprojection_loss.shape).cpu() * 0.00001
                 combined = torch.cat((identity_reprojection_loss, reprojection_loss), dim=1)
             else:
                 combined = reprojection_loss
@@ -463,9 +498,7 @@ class Trainer:
             losses["loss/{}".format(scale)] = loss
         
         total_loss /= self.num_scales
-        #pose_loss = torch.abs((outputs["cam_T_cam_from_geometry",-1,1] - outputs["cam_T_cam_from_posenet",-1,1])).mean()
-        #losses["loss"] = total_loss +  pose_loss 
-        losses["loss"] = total_loss
+        losses["loss"] = total_loss 
         return losses
 
     def compute_depth_losses(self, inputs, outputs, losses):
