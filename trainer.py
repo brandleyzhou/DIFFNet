@@ -99,7 +99,7 @@ class Trainer:
                          "kitti_odom": datasets.KITTIOdomDataset,
                          "cityscapes_preprocessed": datasets.CityscapesPreprocessedDataset
                          }
-        self.dataset_k = datasets_dict[self.opt.split]
+        self.dataset_k = datasets_dict[self.opt.dataset]
         fpath = os.path.join(os.path.dirname(__file__), "splits", self.opt.split, "{}_files.txt")
 
         #change trainset

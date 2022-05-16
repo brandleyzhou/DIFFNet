@@ -55,7 +55,7 @@ class MonoDataset(data.Dataset):
         self.frame_idxs = frame_idxs
 
         self.is_train = is_train
-        self.img_ext = img_ext
+        self.img_ext = '.png'
 
         self.loader = pil_loader
         self.to_tensor = transforms.ToTensor()
