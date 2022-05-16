@@ -99,7 +99,7 @@ class Trainer:
                          "kitti_odom": datasets.KITTIOdomDataset,
                          "cityscapes_preprocessed": datasets.CityscapesPreprocessedDataset
                          }
-        self.dataset_k = datasets_dict["kitti"]
+        self.dataset_k = datasets_dict[self.opt.split]
         fpath = os.path.join(os.path.dirname(__file__), "splits", self.opt.split, "{}_files.txt")
 
         #change trainset
@@ -118,7 +118,7 @@ class Trainer:
             num_workers=self.opt.num_workers, pin_memory=True, drop_last=True)
         
         #val_dataset = self.dataset(
-        val_dataset = datasets.dataset_k( 
+        val_dataset = self.dataset_k( 
             self.opt.data_path, val_filenames, self.opt.height, self.opt.width,
             self.opt.frame_ids, 4, is_train=False, img_ext=img_ext)
         self.val_loader = DataLoader(
