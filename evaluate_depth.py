@@ -95,10 +95,17 @@ def evaluate(opt):
         
         encoder_dict = torch.load(encoder_path) if torch.cuda.is_available() else torch.load(encoder_path,map_location = 'cpu')
         decoder_dict = torch.load(decoder_path) if torch.cuda.is_available() else torch.load(encoder_path,map_location = 'cpu')
-        dataset = datasets.KITTIRAWDataset(opt.data_path, filenames,
+        if opt.eval_split == 'cityscapes':
+            dataset = datasets.CityscapesEvalDataset(opt.data_path, filenames,
+                                                     encoder_dict['height'], encoder_dict['width'],
+                                                     [0], 4,
+                                                     is_train=False)
+        
+        else:
+            dataset = datasets.KITTIRAWDataset(opt.data_path, filenames,
                                            encoder_dict['height'], encoder_dict['width'],
                                            [0], 4, is_train=False)
-        dataloader = DataLoader(dataset, 16, shuffle=False, num_workers=opt.num_workers,
+        dataloader = DataLoader(dataset, 4, shuffle=False, num_workers=opt.num_workers,
                                 pin_memory=True, drop_last=False)
         
         encoder = networks.test_hr_encoder.hrnet18(False)
@@ -186,10 +193,11 @@ def evaluate(opt):
 
         print("-> No ground truth is available for the KITTI benchmark, so not evaluating. Done.")
         quit()
-
-    gt_path = os.path.join(splits_dir, opt.eval_split, "gt_depths.npz")
-    gt_depths = np.load(gt_path, fix_imports=True, encoding='latin1',allow_pickle=True)["data"]
-    #gt_depths = np.load(gt_path, fix_imports=True, encoding='latin1')["data"]
+    if opt.eval_split == 'cityscapes':
+        gt_depths = os.path.join(splits_dir, opt.eval_split, "gt_depths")
+    else:
+        gt_path = os.path.join(splits_dir, opt.eval_split, "gt_depths.npz")
+        gt_depths = np.load(gt_path, fix_imports=True, encoding='latin1',allow_pickle=True)["data"]
 
     print("-> Evaluating")
 
@@ -204,19 +212,27 @@ def evaluate(opt):
     errors = []
     ratios = []
     
-    tobe_cleaned = []
-    cleaned = list(range(pred_disps.shape[0]))
-    for i in tobe_cleaned:
-        if i in cleaned:
-            cleaned.remove(i)
     for i in range(pred_disps.shape[0]):
-
-        gt_depth = gt_depths[i]
-        gt_height, gt_width = gt_depth.shape[:2]
+        if opt.eval_split == 'cityscapes':
+            gt_depth = np.load(os.path.join(gt_depths, str(i).zfill(3) + '_depth.npy'))
+            gt_height, gt_width = gt_depth.shape[:2]
+            # crop ground truth to remove ego car -> this has happened in the dataloader for input
+            # images
+            gt_height = int(round(gt_height * 0.75))
+            gt_depth = gt_depth[:gt_height]
+        else:
+            gt_depth = gt_depths[i]
+            gt_height, gt_width = gt_depth.shape[:2]
 
         pred_disp = pred_disps[i]
         pred_disp = cv2.resize(pred_disp, (gt_width, gt_height))
         pred_depth = 1 / pred_disp
+        
+        
+        if opt.eval_split == "cityscapes":
+            gt_depth = gt_depth[256:, 192:1856]
+            pred_depth = pred_depth[256:, 192:1856]
+        
         if opt.eval_split == "eigen":
             mask = np.logical_and(gt_depth > MIN_DEPTH, gt_depth < MAX_DEPTH)
 
@@ -225,6 +241,9 @@ def evaluate(opt):
             crop_mask = np.zeros(mask.shape)
             crop_mask[crop[0]:crop[1], crop[2]:crop[3]] = 1
             mask = np.logical_and(mask, crop_mask)
+        
+        elif opt.eval_split == 'cityscapes':
+            mask = np.logical_and(gt_depth > MIN_DEPTH, gt_depth < MAX_DEPTH)
 
         else:
             mask = gt_depth > 0

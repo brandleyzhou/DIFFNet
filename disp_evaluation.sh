@@ -1,12 +1,5 @@
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_0 --eval_mono --data_path data_path/kitti_data
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_5 --eval_mono --data_path data_path/kitti_data
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_10 --eval_mono --data_path data_path/kitti_data
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_11 --eval_mono --data_path data_path/kitti_data
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_12 --eval_mono --data_path data_path/kitti_data
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_13 --eval_mono --data_path data_path/kitti_data
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_14 --eval_mono --data_path data_path/kitti_data
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_15 --eval_mono --data_path data_path/kitti_data
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_16 --eval_mono --data_path data_path/kitti_data
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_17 --eval_mono --data_path data_path/kitti_data
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_18 --eval_mono --data_path data_path/kitti_data
-python evaluate_depth.py   --load_weights_folder ~/tmp_hpc/mono_model/12052022-17:26:27/models/weights_19 --eval_mono --data_path data_path/kitti_data
+### for cityscapes evaluation.
+python evaluate_depth.py   --load_weights_folder models/diffnet_640x192 --eval_mono --eval_split cityscapes --data_path data_path/cityscapes_preprocessed
+
+### for kitti evaluation.
+python evaluate_depth.py   --load_weights_folder models/diffnet_640x192 --eval_mono --eval_split eigen --data_path data_path/kitti

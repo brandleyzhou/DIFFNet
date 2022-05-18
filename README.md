@@ -18,6 +18,7 @@ If you think it is a useful work, please consider citing it.
 
 ```
 ## Update:
+- [16-05-2022] Adding cityscapes trainining and testing based on [Manydepth](https://github.com/nianticlabs/manydepth). 
 
 - [22-01-2022] A model diffnet_649x192 uploaded (slightly improved than that of orginal paper)
 - [07-12-2021] A multi-gpu training version availible on multi-gpu branch.
@@ -29,7 +30,7 @@ If you think it is a useful work, please consider citing it.
 ## Evaluation on selected hard cases:
 ![](images/table2.png)
 
-## Trained weights
+## Trained weights on KITTI
 * Please Note: the results of diffnet_1024x320_ms are not reported in paper *
 
 | Methods |abs rel|sq rel| RMSE |rmse log | D1 | D2 | D3 |

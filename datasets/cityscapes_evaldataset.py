@@ -95,9 +95,6 @@ class CityscapesEvalDataset(MonoDataset):
         return inputs
 
     def get_image_path(self, city, frame_name, side, is_sequence=False):
-        #folder = "leftImg8bit" if not is_sequence else "leftImg8bit_sequence"
-        #split = "test"
         image_path = os.path.join(
-            #self.data_path, folder, split, city, frame_name + '_leftImg8bit.png')
             self.data_path, city, frame_name + '_leftImg8bit.png')
         return image_path
