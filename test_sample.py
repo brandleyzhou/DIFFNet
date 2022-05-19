@@ -13,7 +13,6 @@ import torch
 from torchvision import transforms, datasets
 from cv2 import imwrite
 import networks
-import hr_networks
 from layers import disp_to_depth
 from utils import download_model_if_doesnt_exist
 
