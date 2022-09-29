@@ -94,7 +94,9 @@ def evaluate(opt):
         decoder_path = os.path.join(opt.load_weights_folder, "depth.pth")
         
         encoder_dict = torch.load(encoder_path) if torch.cuda.is_available() else torch.load(encoder_path,map_location = 'cpu')
-        decoder_dict = torch.load(decoder_path) if torch.cuda.is_available() else torch.load(encoder_path,map_location = 'cpu')
+        
+        decoder_dict = torch.load(decoder_path) if torch.cuda.is_available() else torch.load(decoder_path,map_location = 'cpu')
+        decoder_dict = torch.load(encoder_path,map_location = 'cpu')
         if opt.eval_split == 'cityscapes':
             dataset = datasets.CityscapesEvalDataset(opt.data_path, filenames,
                                                      encoder_dict['height'], encoder_dict['width'],
